@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แบบตอบรับการประชุม</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:       #0D2B5E;
+  --navy-mid:   #1A3F7A;
+  --navy-light: #2556A0;
+  --navy-pale:  #EEF3FB;
+  --gold:       #C9A84C;
+  --gold-light: #F0DC9A;
+  --white:      #FFFFFF;
+  --gray-50:    #F7F9FC;
+  --gray-100:   #EEF2F9;
+  --gray-200:   #D5DFF0;
+  --gray-400:   #8A9BBF;
+  --gray-600:   #4A5878;
+  --green:      #1B6B44;
+  --green-bg:   #E6F4ED;
+  --red:        #B91C1C;
+  --red-bg:     #FEE2E2;
+  --radius:     14px;
+  --radius-sm:  8px;
+  --shadow:     0 2px 12px rgba(13,43,94,0.10);
+  --shadow-lg:  0 8px 32px rgba(13,43,94,0.16);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sarabun',sans-serif;background:var(--gray-50);min-height:100vh;color:var(--navy);}
+
+/* ── HEADER ── */
+.header{
+  background:linear-gradient(150deg,var(--navy) 0%,var(--navy-mid) 55%,var(--navy-light) 100%);
+  padding:28px 20px 22px;text-align:center;position:relative;overflow:hidden;
+}
+.header::before{content:'';position:absolute;top:-50px;right:-50px;width:200px;height:200px;
+  background:rgba(201,168,76,.10);border-radius:50%;}
+.header::after{content:'';position:absolute;bottom:-40px;left:-30px;width:140px;height:140px;
+  background:rgba(255,255,255,.04);border-radius:50%;}
+.header-logo{width:62px;height:62px;border-radius:50%;border:2px solid var(--gold);
+  background:rgba(255,255,255,.12);margin:0 auto 14px;display:flex;align-items:center;
+  justify-content:center;font-size:26px;position:relative;z-index:1;}
+.header-committee{font-size:.78rem;color:var(--gold-light);letter-spacing:.06em;
+  text-transform:uppercase;position:relative;z-index:1;margin-bottom:6px;}
+.header-title{font-family:'Prompt',sans-serif;font-size:1.2rem;font-weight:600;
+  color:var(--white);line-height:1.4;position:relative;z-index:1;}
+.header-meta{display:flex;justify-content:center;gap:18px;margin-top:14px;
+  position:relative;z-index:1;flex-wrap:wrap;}
+.header-meta span{font-size:.78rem;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:5px;}
+
+/* ── LOADING STATE ── */
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:200px;gap:14px;}
+.spinner{width:44px;height:44px;border:4px solid var(--gray-200);
+  border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── STEPS ── */
+.steps{display:flex;align-items:center;justify-content:center;
+  padding:18px 20px;background:var(--white);border-bottom:1px solid var(--gray-200);}
+.step{display:flex;align-items:center;gap:7px;}
+.step-dot{width:30px;height:30px;border-radius:50%;border:2px solid var(--gray-200);
+  background:var(--white);display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;font-weight:700;color:var(--gray-400);transition:all .3s;flex-shrink:0;}
+.step-dot.active{background:var(--navy);border-color:var(--navy);color:var(--white);
+  box-shadow:0 0 0 4px rgba(13,43,94,.15);}
+.step-dot.done{background:var(--green);border-color:var(--green);color:var(--white);}
+.step-label{font-size:.75rem;color:var(--gray-400);font-weight:500;white-space:nowrap;}
+.step-label.active{color:var(--navy);font-weight:700;}
+.step-line{width:36px;height:2px;background:var(--gray-200);margin:0 4px;flex-shrink:0;}
+.step-line.done{background:var(--green);}
+
+/* ── CONTAINER ── */
+.container{max-width:640px;margin:0 auto;padding:18px 14px 48px;}
+
+/* ── PAGES ── */
+.page{display:none;}
+.page.active{display:block;animation:fadeUp .3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── ANNOUNCEMENT ── */
+.announcement{background:linear-gradient(135deg,#FFF8E7,#FFF3CD);
+  border:1.5px solid var(--gold);border-radius:var(--radius);
+  padding:16px 18px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start;}
+.ann-icon{font-size:1.3rem;flex-shrink:0;margin-top:2px;}
+.ann-text{font-size:.88rem;color:#6B4F10;line-height:1.6;font-weight:500;}
+.ann-img{width:100%;border-radius:var(--radius-sm);margin-top:10px;display:block;}
+
+/* ── CARD ── */
+.card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:22px;margin-bottom:14px;border:1px solid var(--gray-200);}
+.card-title{font-family:'Prompt',sans-serif;font-size:.95rem;font-weight:600;
+  color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.card-icon{width:34px;height:34px;background:var(--navy-pale);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.saved-badge{display:inline-flex;align-items:center;gap:4px;background:var(--green-bg);
+  color:var(--green);font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:20px;margin-left:auto;}
+
+/* ── FIELDS ── */
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:.82rem;font-weight:600;color:var(--gray-600);margin-bottom:6px;}
+.req{color:var(--red);margin-left:2px;}
+.field input,.field select{width:100%;padding:11px 13px;border:1.5px solid var(--gray-200);
+  border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:.93rem;
+  color:var(--navy);background:var(--white);transition:border-color .2s,box-shadow .2s;outline:none;}
+.field input:focus,.field select:focus{border-color:var(--navy-light);
+  box-shadow:0 0 0 3px rgba(37,86,160,.12);}
+.field input::placeholder{color:var(--gray-400);}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* ── AGENCY BANNER ── */
+.agency-banner{background:var(--navy);border-radius:var(--radius);
+  padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+.agency-banner-icon{width:42px;height:42px;background:rgba(255,255,255,.12);
+  border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;flex-shrink:0;}
+.agency-banner-info{flex:1;min-width:0;}
+.agency-banner-name{font-family:'Prompt',sans-serif;font-weight:600;font-size:.92rem;
+  color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.agency-banner-sub{font-size:.74rem;color:rgba(255,255,255,.6);margin-top:2px;}
+.agency-banner-edit{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  color:var(--white);border-radius:6px;padding:4px 9px;font-size:.72rem;
+  font-family:'Sarabun',sans-serif;cursor:pointer;flex-shrink:0;transition:background .2s;}
+.agency-banner-edit:hover{background:rgba(255,255,255,.25);}
+
+/* ── ATTENDEE INPUT ── */
+.att-input-box{background:var(--gray-50);border:1.5px dashed var(--gray-200);
+  border-radius:var(--radius);padding:18px;margin-bottom:14px;}
+.att-input-title{font-size:.82rem;font-weight:700;color:var(--gray-600);
+  margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+
+/* ── ATTENDEE CARDS ── */
+.att-list{display:flex;flex-direction:column;gap:9px;margin-bottom:12px;}
+.att-card{background:var(--white);border:1.5px solid var(--gray-200);
+  border-radius:var(--radius-sm);padding:12px 14px;display:flex;align-items:center;gap:11px;
+  animation:slideIn .25s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateX(-8px);}to{opacity:1;transform:translateX(0);}}
+.att-avatar{width:38px;height:38px;background:var(--navy);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--white);font-weight:700;font-size:.88rem;flex-shrink:0;}
+.att-info{flex:1;min-width:0;}
+.att-name{font-weight:600;font-size:.88rem;color:var(--navy);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.att-detail{font-size:.74rem;color:var(--gray-400);margin-top:2px;}
+.att-remove{background:var(--red-bg);border:none;color:var(--red);width:28px;height:28px;
+  border-radius:6px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;transition:background .2s;}
+.att-remove:hover{background:#fca5a5;}
+.att-count{font-size:.78rem;color:var(--gray-400);text-align:center;margin-bottom:12px;}
+.att-count strong{color:var(--navy);}
+
+/* ── INFO BOX ── */
+.info-box{background:var(--navy-pale);border-left:4px solid var(--navy-light);
+  border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:11px 14px;
+  margin-bottom:14px;font-size:.82rem;color:var(--gray-600);display:flex;gap:8px;}
+
+/* ── BUTTONS ── */
+.btn{display:block;width:100%;padding:13px;border-radius:var(--radius-sm);border:none;
+  font-family:'Sarabun',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;
+  transition:all .2s;text-align:center;letter-spacing:.02em;}
+.btn-primary{background:var(--navy);color:var(--white);
+  box-shadow:0 4px 14px rgba(13,43,94,.28);}
+.btn-primary:hover{background:var(--navy-light);transform:translateY(-1px);}
+.btn-primary:active{transform:translateY(0);}
+.btn-secondary{background:var(--white);color:var(--navy);
+  border:1.5px solid var(--navy);margin-top:9px;}
+.btn-secondary:hover{background:var(--gray-100);}
+.btn-add{background:var(--gray-100);color:var(--navy);
+  border:1.5px dashed var(--navy-light);font-size:.88rem;padding:10px;
+  display:flex;align-items:center;justify-content:center;gap:7px;}
+.btn-add:hover{background:var(--gray-200);}
+
+/* ── SUCCESS ── */
+.success-wrap{text-align:center;padding:36px 20px 28px;}
+.success-icon{width:84px;height:84px;background:var(--green-bg);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:2.4rem;margin:0 auto 18px;border:3px solid var(--green);}
+.success-title{font-family:'Prompt',sans-serif;font-size:1.35rem;font-weight:700;
+  color:var(--green);margin-bottom:6px;}
+.success-sub{color:var(--gray-600);font-size:.88rem;margin-bottom:22px;}
+.summary-box{background:var(--gray-100);border-radius:var(--radius);
+  padding:16px 18px;margin-bottom:18px;text-align:left;}
+.summary-row{display:flex;justify-content:space-between;align-items:center;
+  padding:7px 0;font-size:.84rem;border-bottom:1px solid var(--gray-200);}
+.summary-row:last-child{border-bottom:none;}
+.summary-label{color:var(--gray-400);}
+.summary-value{font-weight:600;color:var(--navy);text-align:right;max-width:62%;}
+
+/* ── ERROR ── */
+.error-box{background:var(--red-bg);border:1.5px solid #fca5a5;border-radius:var(--radius-sm);
+  padding:12px 14px;font-size:.84rem;color:var(--red);margin-bottom:14px;display:flex;gap:8px;}
+
+/* ── OVERLAY & TOAST ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(13,43,94,.5);
+  z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
+.overlay.show{display:flex;}
+.overlay .spinner{border-top-color:var(--white);border-color:rgba(255,255,255,.3);}
+.overlay-txt{color:var(--white);font-size:.88rem;}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--navy);color:var(--white);padding:11px 22px;border-radius:30px;
+  font-size:.84rem;font-weight:500;transition:transform .3s;z-index:1000;
+  white-space:nowrap;box-shadow:var(--shadow-lg);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+@media(min-width:600px){
+  .container{padding:24px 20px 60px;}
+  .card{padding:26px;}
+  .header{padding:36px 24px 28px;}
+}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay">
+  <div class="spinner"></div>
+  <div class="overlay-txt" id="overlayTxt">กำลังโหลด...</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">🏛️</div>
+  <div class="header-committee" id="hCommittee">กำลังโหลด...</div>
+  <div class="header-title" id="hTitle">แบบตอบรับการเข้าร่วมประชุม</div>
+  <div class="header-meta">
+    <span>📅 <span id="hDate">-</span></span>
+    <span>📍 <span id="hPlace">-</span></span>
+  </div>
+</div>
+
+<!-- STEPS -->
+<div class="steps">
+  <div class="step">
+    <div class="step-dot active" id="dot1">1</div>
+    <div class="step-label active" id="lbl1">หน่วยงาน</div>
+  </div>
+  <div class="step-line" id="line1"></div>
+  <div class="step">
+    <div class="step-dot" id="dot2">2</div>
+    <div class="step-label" id="lbl2">ผู้เข้าร่วม</div>
+  </div>
+  <div class="step-line" id="line2"></div>
+  <div class="step">
+    <div class="step-dot" id="dot3">✓</div>
+    <div class="step-label" id="lbl3">เสร็จสิ้น</div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ════ PAGE 1 : ข้อมูลหน่วยงาน ════ -->
+<div class="page active" id="page1">
+
+  <div class="loading-screen" id="loadingMeeting">
+    <div class="spinner"></div>
+    <div style="font-size:.85rem;color:var(--gray-400);">กำลังโหลดข้อมูลการประชุม...</div>
+  </div>
+
+  <div id="page1Content" style="display:none;">
+    <!-- Announcement (shown if exists) -->
+    <div class="announcement" id="annBox" style="display:none;">
+      <div class="ann-icon">📢</div>
+      <div>
+        <div class="ann-text" id="annText"></div>
+        <img id="annImg" class="ann-img" style="display:none;" alt="ประกาศ">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <div class="card-icon">🏢</div>
+        ข้อมูลหน่วยงาน
+        <div class="saved-badge" id="savedBadge" style="display:none;">✓ จำไว้แล้ว</div>
+      </div>
+      <div class="info-box">
+        💡 ระบบจะจดจำข้อมูลหน่วยงานในเครื่องนี้โดยอัตโนมัติ
+      </div>
+      <div class="field">
+        <label>ชื่อหน่วยงาน / องค์กร<span class="req">*</span></label>
+        <input type="text" id="agencyName" placeholder="เช่น กรมพัฒนาธุรกิจการค้า">
+      </div>
+      <div class="field">
+        <label>สังกัด / กระทรวง<span class="req">*</span></label>
+        <input type="text" id="agencyMinistry" placeholder="เช่น กระทรวงพาณิชย์">
+      </div>
+      <div class="field">
+        <label>เบอร์โทรติดต่อหน่วยงาน<span class="req">*</span></label>
+        <input type="tel" id="agencyPhone" placeholder="02-xxx-xxxx" inputmode="tel">
+      </div>
+      <button class="btn btn-primary" onclick="goPage2()">ถัดไป →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ PAGE 2 : รายชื่อผู้เข้าร่วม ════ -->
+<div class="page" id="page2">
+
+  <div class="agency-banner">
+    <div class="agency-banner-icon">🏢</div>
+    <div class="agency-banner-info">
+      <div class="agency-banner-name" id="bannerName">-</div>
+      <div class="agency-banner-sub" id="bannerSub">-</div>
+    </div>
+    <button class="agency-banner-edit" onclick="goPage1()">✏️ แก้ไข</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <div class="card-icon">👥</div>
+      รายชื่อผู้เข้าร่วมประชุม
+    </div>
+
+    <div class="att-list" id="attList"></div>
+    <div class="att-count" id="attCount" style="display:none;">
+      เพิ่มแล้ว <strong id="attNum">0</strong> ท่าน
+    </div>
+
+    <!-- Input area -->
+    <div class="att-input-box">
+      <div class="att-input-title">➕ เพิ่มผู้เข้าร่วม</div>
+      <div class="field-row">
+        <div class="field">
+          <label>ชื่อ-นามสกุล<span class="req">*</span></label>
+          <input type="text" id="attName" placeholder="นายสมชาย ใจดี" onkeydown="enterAdd(event)">
+        </div>
+        <div class="field">
+          <label>ตำแหน่ง<span class="req">*</span></label>
+          <input type="text" id="attPos" placeholder="นักวิเคราะห์" onkeydown="enterAdd(event)">
+        </div>
+      </div>
+      <div class="field">
+        <label>เบอร์โทรส่วนตัว</label>
+        <input type="tel" id="attPhone" placeholder="08x-xxx-xxxx" inputmode="tel" onkeydown="enterAdd(event)">
+      </div>
+      <button class="btn btn-add" onclick="addAtt()">＋ เพิ่มผู้เข้าร่วมท่านนี้</button>
+    </div>
+
+    <button class="btn btn-primary" onclick="submitForm()">✔ ยืนยันการตอบรับ</button>
+    <button class="btn btn-secondary" onclick="goPage1()">← กลับ</button>
+  </div>
+</div>
+
+<!-- ════ PAGE 3 : สำเร็จ ════ -->
+<div class="page" id="page3">
+  <div class="card">
+    <div class="success-wrap">
+      <div class="success-icon">✅</div>
+      <div class="success-title">ส่งแบบตอบรับเรียบร้อยแล้ว</div>
+      <div class="success-sub">ขอบคุณที่ตอบรับเข้าร่วมการประชุม</div>
+      <div class="summary-box">
+        <div class="summary-row">
+          <span class="summary-label">การประชุม</span>
+          <span class="summary-value" id="sumTitle">-</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">หน่วยงาน</span>
+          <span class="summary-value" id="sumAgency">-</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">สังกัด</span>
+          <span class="summary-value" id="sumMinistry">-</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">จำนวนผู้เข้าร่วม</span>
+          <span class="summary-value" id="sumCount">-</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">เวลาที่ส่ง</span>
+          <span class="summary-value" id="sumTime">-</span>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="sendMore()">📋 ส่งแบบตอบรับเพิ่มเติม</button>
+      <button class="btn btn-secondary" onclick="goPage1Edit()">✏️ แก้ไขข้อมูลหน่วยงาน</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════
+const APPS_URL = 'https://script.google.com/macros/s/AKfycbxN9NN1OhUHMHeRPs7TMANCgMT1QM-1s8a3422dZmsMHUn0OyusXtoMHhtSf1fNBjJ6/exec';
+
+// ── State ──────────────────────────────
+let meeting = null;
+let attendees = [];
+
+// ── Init ───────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id') || 'MTG001';
+  await loadMeeting(id);
+  loadSavedAgency();
+});
+
+// ── Load meeting from Apps Script ──────
+async function loadMeeting(id) {
+  try {
+    const res = await fetch(`${APPS_URL}?action=getMeeting&id=${id}`);
+    const data = await res.json();
+    if (data.success) {
+      meeting = data.meeting;
+      renderHeader(meeting);
+      renderAnnouncement(meeting);
+    } else {
+      showError('ไม่พบข้อมูลการประชุม กรุณาตรวจสอบ QR Code');
+    }
+  } catch(e) {
+    showError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่');
+  }
+  document.getElementById('loadingMeeting').style.display = 'none';
+  document.getElementById('page1Content').style.display = 'block';
+}
+
+function renderHeader(m) {
+  document.getElementById('hCommittee').textContent = m.committee_name || '';
+  document.getElementById('hTitle').textContent = m.title || 'แบบตอบรับการเข้าร่วมประชุม';
+  document.getElementById('hDate').textContent = m.date || '-';
+  document.getElementById('hPlace').textContent = m.place || '-';
+  document.title = m.title || 'แบบตอบรับ';
+}
+
+function renderAnnouncement(m) {
+  const box = document.getElementById('annBox');
+  const txt = document.getElementById('annText');
+  const img = document.getElementById('annImg');
+  if (m.announcement_text || m.announcement_image) {
+    box.style.display = 'flex';
+    if (m.announcement_text) txt.textContent = m.announcement_text;
+    if (m.announcement_image) { img.src = m.announcement_image; img.style.display = 'block'; }
+  }
+}
+
+function showError(msg) {
+  document.getElementById('loadingMeeting').style.display = 'none';
+  document.getElementById('page1Content').style.display = 'block';
+  const box = document.createElement('div');
+  box.className = 'error-box';
+  box.innerHTML = '⚠️ ' + msg;
+  document.getElementById('page1Content').prepend(box);
+}
+
+// ── Local Storage ──────────────────────
+function loadSavedAgency() {
+  const s = JSON.parse(localStorage.getItem('agency') || 'null');
+  if (s) {
+    document.getElementById('agencyName').value = s.name || '';
+    document.getElementById('agencyMinistry').value = s.ministry || '';
+    document.getElementById('agencyPhone').value = s.phone || '';
+    document.getElementById('savedBadge').style.display = 'inline-flex';
+  }
+}
+function saveAgency(n,m,p){ localStorage.setItem('agency', JSON.stringify({name:n,ministry:m,phone:p})); }
+
+// ── Navigation ─────────────────────────
+function showPage(n) {
+  ['page1','page2','page3'].forEach((id,i)=>{
+    document.getElementById(id).classList.toggle('active', i+1===n);
+  });
+  [1,2,3].forEach(i=>{
+    const dot=document.getElementById('dot'+i), lbl=document.getElementById('lbl'+i);
+    dot.classList.remove('active','done'); lbl.classList.remove('active');
+    if(i<n) dot.classList.add('done');
+    if(i===n){dot.classList.add('active'); lbl.classList.add('active');}
+    if(i<=2){ const l=document.getElementById('line'+i); l.classList.toggle('done',i<n); }
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function goPage1(){ showPage(1); }
+function goPage1Edit(){ showPage(1); }
+
+function goPage2() {
+  const name=val('agencyName'), min=val('agencyMinistry'), ph=val('agencyPhone');
+  if(!name||!min||!ph){ toast('⚠️ กรุณากรอกข้อมูลหน่วยงานให้ครบถ้วน'); return; }
+  saveAgency(name,min,ph);
+  document.getElementById('bannerName').textContent = name;
+  document.getElementById('bannerSub').textContent = min + ' | ☎ ' + ph;
+  attendees = []; renderAtts();
+  showPage(2);
+}
+
+// ── Attendees ──────────────────────────
+function enterAdd(e){ if(e.key==='Enter') addAtt(); }
+
+function addAtt(){
+  const name=val('attName'), pos=val('attPos'), ph=val('attPhone');
+  if(!name||!pos){ toast('⚠️ กรุณากรอกชื่อ-นามสกุล และตำแหน่ง'); return; }
+  attendees.push({name,pos,phone:ph});
+  renderAtts();
+  ['attName','attPos','attPhone'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('attName').focus();
+  toast('✅ เพิ่ม '+name+' แล้ว');
+}
+
+function removeAtt(i){ attendees.splice(i,1); renderAtts(); }
+
+function renderAtts(){
+  const list=document.getElementById('attList');
+  const countBox=document.getElementById('attCount');
+  list.innerHTML='';
+  attendees.forEach((a,i)=>{
+    const c=document.createElement('div'); c.className='att-card';
+    c.innerHTML=`<div class="att-avatar">${a.name.charAt(0)}</div>
+      <div class="att-info">
+        <div class="att-name">${esc(a.name)}</div>
+        <div class="att-detail">${esc(a.pos)}${a.phone?' · '+esc(a.phone):''}</div>
+      </div>
+      <button class="att-remove" onclick="removeAtt(${i})">✕</button>`;
+    list.appendChild(c);
+  });
+  countBox.style.display = attendees.length ? 'block' : 'none';
+  document.getElementById('attNum').textContent = attendees.length;
+}
+
+// ── Submit ─────────────────────────────
+async function submitForm(){
+  if(!attendees.length){ toast('⚠️ กรุณาเพิ่มผู้เข้าร่วมอย่างน้อย 1 ท่าน'); return; }
+  const agency = JSON.parse(localStorage.getItem('agency'));
+  const payload = {
+    action:'submitResponse',
+    meetingId: meeting?.id||'',
+    meetingTitle: meeting?.title||'',
+    agencyName: agency.name,
+    agencyMinistry: agency.ministry,
+    agencyPhone: agency.phone,
+    attendees,
+  };
+  showOverlay('กำลังส่งข้อมูล...');
+  try{
+    await fetch(APPS_URL,{method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    hideOverlay();
+    showSuccess(payload);
+  }catch(e){
+    hideOverlay(); toast('❌ ส่งไม่สำเร็จ กรุณาลองใหม่');
+  }
+}
+
+function showSuccess(p){
+  document.getElementById('sumTitle').textContent = p.meetingTitle||'-';
+  document.getElementById('sumAgency').textContent = p.agencyName;
+  document.getElementById('sumMinistry').textContent = p.agencyMinistry;
+  document.getElementById('sumCount').textContent = p.attendees.length+' ท่าน';
+  document.getElementById('sumTime').textContent = new Date().toLocaleString('th-TH');
+  showPage(3);
+}
+
+function sendMore(){ attendees=[]; renderAtts(); showPage(2); }
+
+// ── Helpers ────────────────────────────
+function val(id){ return document.getElementById(id).value.trim(); }
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function showOverlay(t){ document.getElementById('overlayTxt').textContent=t; document.getElementById('overlay').classList.add('show'); }
+function hideOverlay(){ document.getElementById('overlay').classList.remove('show'); }
+let _tt; function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('show'),2800); }
+</script>
+</body>
+</html>

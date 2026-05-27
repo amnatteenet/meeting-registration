@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — ระบบแบบตอบรับ</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0D2B5E; --navy-mid:#1A3F7A; --navy-light:#2556A0; --navy-pale:#EEF3FB;
+  --gold:#C9A84C; --gold-light:#F0DC9A;
+  --white:#FFFFFF; --gray-50:#F7F9FC; --gray-100:#EEF2F9; --gray-200:#D5DFF0;
+  --gray-400:#8A9BBF; --gray-600:#4A5878;
+  --green:#1B6B44; --green-bg:#E6F4ED;
+  --red:#B91C1C; --red-bg:#FEE2E2;
+  --orange:#B45309; --orange-bg:#FEF3C7;
+  --radius:12px; --radius-sm:8px;
+  --shadow:0 2px 10px rgba(13,43,94,.10);
+  --shadow-lg:0 8px 28px rgba(13,43,94,.15);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sarabun',sans-serif;background:var(--gray-50);min-height:100vh;color:var(--navy);}
+
+/* ── LOGIN ── */
+#loginScreen{display:flex;align-items:center;justify-content:center;
+  min-height:100vh;padding:20px;
+  background:linear-gradient(150deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);}
+.login-card{background:var(--white);border-radius:18px;padding:40px 32px;
+  width:100%;max-width:380px;box-shadow:var(--shadow-lg);text-align:center;}
+.login-logo{font-size:2.5rem;margin-bottom:16px;}
+.login-title{font-family:'Prompt',sans-serif;font-size:1.2rem;font-weight:700;
+  color:var(--navy);margin-bottom:4px;}
+.login-sub{font-size:.82rem;color:var(--gray-400);margin-bottom:28px;}
+.login-field{margin-bottom:16px;text-align:left;}
+.login-field label{display:block;font-size:.8rem;font-weight:600;color:var(--gray-600);margin-bottom:6px;}
+.login-field input{width:100%;padding:12px 14px;border:1.5px solid var(--gray-200);
+  border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:.92rem;
+  color:var(--navy);outline:none;transition:border-color .2s;}
+.login-field input:focus{border-color:var(--navy-light);}
+.login-err{background:var(--red-bg);color:var(--red);font-size:.8rem;
+  padding:9px 12px;border-radius:var(--radius-sm);margin-bottom:14px;display:none;}
+
+/* ── MAIN LAYOUT ── */
+#adminScreen{display:none;}
+.topbar{background:linear-gradient(135deg,var(--navy),var(--navy-mid));
+  padding:0 20px;display:flex;align-items:center;gap:14px;height:56px;
+  box-shadow:var(--shadow);}
+.topbar-logo{font-size:1.3rem;}
+.topbar-title{font-family:'Prompt',sans-serif;font-weight:600;font-size:1rem;
+  color:var(--white);flex:1;}
+.topbar-logout{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  color:var(--white);border-radius:6px;padding:5px 12px;font-size:.78rem;
+  font-family:'Sarabun',sans-serif;cursor:pointer;transition:background .2s;}
+.topbar-logout:hover{background:rgba(255,255,255,.25);}
+
+.main{max-width:900px;margin:0 auto;padding:20px 14px 60px;}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:4px;background:var(--white);border-radius:var(--radius);
+  padding:6px;box-shadow:var(--shadow);margin-bottom:18px;overflow-x:auto;}
+.tab{flex:1;padding:10px 12px;border:none;border-radius:var(--radius-sm);
+  font-family:'Sarabun',sans-serif;font-size:.85rem;font-weight:600;
+  cursor:pointer;transition:all .2s;color:var(--gray-600);background:transparent;
+  white-space:nowrap;}
+.tab.active{background:var(--navy);color:var(--white);}
+.tab:hover:not(.active){background:var(--gray-100);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* ── SECTION HEADER ── */
+.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.sec-title{font-family:'Prompt',sans-serif;font-size:1rem;font-weight:700;color:var(--navy);}
+
+/* ── CARD ── */
+.card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:20px;margin-bottom:12px;border:1px solid var(--gray-200);}
+.card-title{font-family:'Prompt',sans-serif;font-size:.9rem;font-weight:600;
+  color:var(--navy);margin-bottom:14px;}
+
+/* ── FORM ── */
+.field{margin-bottom:13px;}
+.field label{display:block;font-size:.8rem;font-weight:600;color:var(--gray-600);margin-bottom:5px;}
+.req{color:var(--red);margin-left:2px;}
+.field input,.field textarea,.field select{width:100%;padding:10px 12px;
+  border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);
+  font-family:'Sarabun',sans-serif;font-size:.9rem;color:var(--navy);
+  background:var(--white);outline:none;transition:border-color .2s;}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--navy-light);}
+.field textarea{min-height:80px;resize:vertical;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.field-hint{font-size:.74rem;color:var(--gray-400);margin-top:4px;}
+
+/* ── MEETING LIST ── */
+.meeting-card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:16px 18px;margin-bottom:10px;border:1px solid var(--gray-200);
+  display:flex;align-items:center;gap:14px;cursor:pointer;transition:box-shadow .2s;}
+.meeting-card:hover{box-shadow:var(--shadow-lg);}
+.meeting-card.inactive{opacity:.55;}
+.m-icon{width:44px;height:44px;background:var(--navy-pale);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
+.m-info{flex:1;min-width:0;}
+.m-committee{font-size:.72rem;color:var(--gold);font-weight:700;letter-spacing:.04em;
+  text-transform:uppercase;margin-bottom:2px;}
+.m-title{font-family:'Prompt',sans-serif;font-weight:600;font-size:.9rem;
+  color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.m-meta{font-size:.74rem;color:var(--gray-400);margin-top:3px;}
+.m-actions{display:flex;gap:7px;flex-shrink:0;}
+.m-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;
+  font-size:.7rem;font-weight:700;}
+.m-badge.active{background:var(--green-bg);color:var(--green);}
+.m-badge.inactive{background:var(--gray-100);color:var(--gray-400);}
+
+/* ── QR SECTION ── */
+.qr-box{background:var(--navy-pale);border-radius:var(--radius-sm);
+  padding:12px 14px;display:flex;align-items:center;gap:10px;margin-top:10px;}
+.qr-url{font-size:.78rem;color:var(--navy-light);word-break:break-all;flex:1;}
+.copy-btn{background:var(--navy);color:var(--white);border:none;border-radius:6px;
+  padding:6px 12px;font-size:.75rem;font-family:'Sarabun',sans-serif;cursor:pointer;
+  flex-shrink:0;transition:background .2s;}
+.copy-btn:hover{background:var(--navy-light);}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px 18px;border-radius:var(--radius-sm);border:none;
+  font-family:'Sarabun',sans-serif;font-size:.88rem;font-weight:600;
+  cursor:pointer;transition:all .2s;letter-spacing:.02em;}
+.btn-primary{background:var(--navy);color:var(--white);box-shadow:0 3px 10px rgba(13,43,94,.25);}
+.btn-primary:hover{background:var(--navy-light);}
+.btn-success{background:var(--green);color:var(--white);}
+.btn-success:hover{filter:brightness(1.1);}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid #fca5a5;}
+.btn-danger:hover{background:#fca5a5;}
+.btn-ghost{background:var(--gray-100);color:var(--gray-600);}
+.btn-ghost:hover{background:var(--gray-200);}
+.btn-sm{padding:6px 12px;font-size:.78rem;}
+.btn-block{display:flex;width:100%;}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
+.stat-card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:18px;text-align:center;border:1px solid var(--gray-200);}
+.stat-num{font-family:'Prompt',sans-serif;font-size:2rem;font-weight:700;color:var(--navy);}
+.stat-label{font-size:.78rem;color:var(--gray-400);margin-top:4px;}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);box-shadow:var(--shadow);}
+table{width:100%;border-collapse:collapse;background:var(--white);font-size:.82rem;}
+th{background:var(--navy);color:var(--white);padding:10px 12px;
+  text-align:left;font-weight:600;white-space:nowrap;}
+td{padding:9px 12px;border-bottom:1px solid var(--gray-100);color:var(--gray-600);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--gray-50);}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(13,43,94,.5);
+  z-index:999;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow-lg);
+  width:100%;max-width:560px;max-height:90vh;overflow-y:auto;animation:fadeUp .3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;
+  padding:18px 20px;border-bottom:1px solid var(--gray-200);}
+.modal-title{font-family:'Prompt',sans-serif;font-size:1rem;font-weight:700;color:var(--navy);}
+.modal-close{background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--gray-400);}
+.modal-body{padding:20px;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--gray-200);
+  display:flex;gap:8px;justify-content:flex-end;}
+
+/* ── DATE PICKER ── */
+.date-picker-wrap{position:relative;}
+.date-display{width:100%;padding:10px 12px;border:1.5px solid var(--gray-200);
+  border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:.9rem;
+  color:var(--navy);background:var(--white);cursor:pointer;
+  display:flex;align-items:center;justify-content:space-between;
+  outline:none;transition:border-color .2s;user-select:none;}
+.date-display:hover,.date-display.open{border-color:var(--navy-light);}
+.date-display.placeholder{color:var(--gray-400);}
+.date-cal{position:absolute;top:calc(100% + 6px);left:0;z-index:100;
+  background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow-lg);
+  border:1px solid var(--gray-200);padding:14px;width:300px;display:none;}
+.date-cal.show{display:block;animation:fadeUp .2s ease;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.cal-nav{background:none;border:none;width:28px;height:28px;border-radius:6px;
+  cursor:pointer;font-size:1rem;color:var(--navy);display:flex;align-items:center;
+  justify-content:center;transition:background .2s;}
+.cal-nav:hover{background:var(--gray-100);}
+.cal-month-title{font-family:'Prompt',sans-serif;font-weight:600;font-size:.88rem;color:var(--navy);}
+.cal-days-header{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;}
+.cal-day-name{text-align:center;font-size:.7rem;font-weight:700;color:var(--gray-400);padding:4px 0;}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.cal-day{text-align:center;padding:6px 2px;font-size:.8rem;border-radius:6px;
+  cursor:pointer;color:var(--navy);transition:background .15s;}
+.cal-day:hover{background:var(--navy-pale);}
+.cal-day.today{font-weight:700;color:var(--navy-light);}
+.cal-day.selected{background:var(--navy);color:var(--white);}
+.cal-day.other-month{color:var(--gray-200);}
+.cal-day.empty{cursor:default;}
+
+/* ── IMAGE UPLOAD ── */
+.img-upload-area{border:2px dashed var(--gray-200);border-radius:var(--radius-sm);
+  padding:24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--gray-50);}
+.img-upload-area:hover,.img-upload-area.dragover{border-color:var(--navy-light);background:var(--navy-pale);}
+.img-upload-icon{font-size:2rem;margin-bottom:8px;}
+.img-upload-txt{font-size:.84rem;color:var(--gray-400);}
+.img-upload-txt strong{color:var(--navy-light);}
+.img-preview-wrap{position:relative;margin-top:10px;display:none;}
+.img-preview{width:100%;max-height:200px;object-fit:cover;border-radius:var(--radius-sm);
+  display:block;border:1px solid var(--gray-200);}
+.img-remove{position:absolute;top:6px;right:6px;background:var(--red);color:var(--white);
+  border:none;border-radius:50%;width:26px;height:26px;font-size:.8rem;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.2);}
+.img-size-warn{background:var(--orange-bg);border:1px solid #FCD34D;border-radius:var(--radius-sm);
+  padding:8px 12px;font-size:.76rem;color:var(--orange);margin-top:8px;display:none;}
+
+/* ── SPINNER ── */
+.spinner{width:36px;height:36px;border:3px solid var(--gray-200);
+  border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite;margin:30px auto;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--navy);color:var(--white);padding:10px 20px;border-radius:30px;
+  font-size:.82rem;font-weight:500;transition:transform .3s;z-index:2000;
+  white-space:nowrap;box-shadow:var(--shadow-lg);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+@media(min-width:600px){.main{padding:24px 20px 60px;}}
+</style>
+</head>
+<body>
+
+<!-- ════ LOGIN ════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">🏛️</div>
+    <div class="login-title">Admin Panel</div>
+    <div class="login-sub">ระบบจัดการแบบตอบรับการประชุม</div>
+    <div class="login-err" id="loginErr">รหัสผ่านไม่ถูกต้อง</div>
+    <div class="login-field">
+      <label>รหัสผ่าน</label>
+      <input type="password" id="pwInput" placeholder="กรอกรหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary btn-block" style="width:100%;justify-content:center;" onclick="doLogin()">เข้าสู่ระบบ</button>
+  </div>
+</div>
+
+<!-- ════ ADMIN SCREEN ════ -->
+<div id="adminScreen">
+  <div class="topbar">
+    <div class="topbar-logo">🏛️</div>
+    <div class="topbar-title">Admin Panel — ระบบแบบตอบรับการประชุม</div>
+    <button class="topbar-logout" onclick="logout()">ออกจากระบบ</button>
+  </div>
+
+  <div class="main">
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab(0)">📋 จัดการแบบฟอร์ม</button>
+      <button class="tab" onclick="switchTab(1)">➕ เพิ่มแบบฟอร์มใหม่</button>
+      <button class="tab" onclick="switchTab(2)">📊 ข้อมูลผู้ตอบรับ</button>
+    </div>
+
+    <!-- ── TAB 0: จัดการแบบฟอร์ม ── -->
+    <div class="tab-panel active" id="panel0">
+      <div class="sec-header">
+        <div class="sec-title">แบบฟอร์มทั้งหมด</div>
+        <button class="btn btn-primary btn-sm" onclick="loadMeetings()">🔄 รีเฟรช</button>
+      </div>
+      <div id="meetingList"><div class="spinner"></div></div>
+    </div>
+
+    <!-- ── TAB 1: เพิ่มแบบฟอร์มใหม่ ── -->
+    <div class="tab-panel" id="panel1">
+      <div class="card">
+        <div class="card-title" id="formCardTitle">➕ เพิ่มแบบฟอร์มการประชุมใหม่</div>
+        <input type="hidden" id="editingId">
+        <div class="field-row">
+          <div class="field">
+            <label>ชื่อคณะ / คณะกรรมการ<span class="req">*</span></label>
+            <input type="text" id="fCommittee" placeholder="เช่น คณะกรรมการบริหาร">
+          </div>
+          <div class="field">
+            <label>วันที่ประชุม<span class="req">*</span></label>
+            <div class="date-picker-wrap">
+              <div class="date-display placeholder" id="fDateDisplay" onclick="toggleCal('f')">
+                <span id="fDateText">เลือกวันที่ประชุม</span>
+                <span>📅</span>
+              </div>
+              <input type="hidden" id="fDate">
+              <div class="date-cal" id="fDateCal"></div>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>เรื่องที่ประชุม / ชื่อการประชุม<span class="req">*</span></label>
+          <input type="text" id="fTitle" placeholder="เช่น การประชุมครั้งที่ 1/2568">
+        </div>
+        <div class="field">
+          <label>สถานที่ประชุม<span class="req">*</span></label>
+          <input type="text" id="fPlace" placeholder="เช่น ห้องประชุม 301 ชั้น 3">
+        </div>
+        <div class="field">
+          <label>ประกาศ / ข้อความแจ้ง (ถ้ามี)</label>
+          <textarea id="fAnnText" placeholder="ข้อความที่ต้องการแจ้งให้ผู้รับเชิญทราบ เช่น กรุณาแต่งกายสุภาพ"></textarea>
+        </div>
+        <div class="field">
+          <label>รูปภาพประกาศ (ถ้ามี)</label>
+          <div class="img-upload-area" id="fImgArea"
+            onclick="document.getElementById('fImgInput').click()"
+            ondragover="dragOver(event,'f')" ondragleave="dragLeave('f')" ondrop="dropImg(event,'f')">
+            <div class="img-upload-icon">🖼️</div>
+            <div class="img-upload-txt">คลิกหรือลากรูปมาวางที่นี่<br><strong>JPG, PNG, GIF</strong> ขนาดไม่เกิน 2MB</div>
+          </div>
+          <input type="file" id="fImgInput" accept="image/*" style="display:none" onchange="handleImg(event,'f')">
+          <div class="img-size-warn" id="fImgWarn">⚠️ รูปภาพมีขนาดใหญ่เกิน 2MB กรุณาเลือกรูปที่มีขนาดเล็กกว่า</div>
+          <div class="img-preview-wrap" id="fImgPreviewWrap">
+            <img class="img-preview" id="fImgPreview" alt="preview">
+            <button class="img-remove" onclick="removeImg('f')">✕</button>
+          </div>
+          <input type="hidden" id="fAnnImg">
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="saveMeeting()">💾 บันทึก</button>
+          <button class="btn btn-ghost" onclick="clearForm()">✕ ล้างข้อมูล</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB 2: ข้อมูลผู้ตอบรับ ── -->
+    <div class="tab-panel" id="panel2">
+      <div class="sec-header">
+        <div class="sec-title">ข้อมูลผู้ตอบรับ</div>
+        <button class="btn btn-ghost btn-sm" onclick="loadResponses()">🔄 รีเฟรช</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-num" id="statTotal">-</div>
+          <div class="stat-label">ผู้ตอบรับทั้งหมด</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="statAgency">-</div>
+          <div class="stat-label">หน่วยงาน</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="statToday">-</div>
+          <div class="stat-label">ตอบรับวันนี้</div>
+        </div>
+      </div>
+      <div id="responseArea"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── EDIT MODAL ── -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">✏️ แก้ไขแบบฟอร์มการประชุม</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="modalId">
+      <div class="field-row">
+        <div class="field">
+          <label>ชื่อคณะ / คณะกรรมการ<span class="req">*</span></label>
+          <input type="text" id="mCommittee">
+        </div>
+        <div class="field">
+          <label>วันที่ประชุม<span class="req">*</span></label>
+          <div class="date-picker-wrap">
+            <div class="date-display" id="mDateDisplay" onclick="toggleCal('m')">
+              <span id="mDateText">เลือกวันที่ประชุม</span>
+              <span>📅</span>
+            </div>
+            <input type="hidden" id="mDate">
+            <div class="date-cal" id="mDateCal"></div>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>เรื่องที่ประชุม<span class="req">*</span></label>
+        <input type="text" id="mTitle">
+      </div>
+      <div class="field">
+        <label>สถานที่ประชุม<span class="req">*</span></label>
+        <input type="text" id="mPlace">
+      </div>
+      <div class="field">
+        <label>ประกาศ / ข้อความแจ้ง</label>
+        <textarea id="mAnnText"></textarea>
+      </div>
+      <div class="field">
+        <label>รูปภาพประกาศ</label>
+        <div class="img-upload-area" id="mImgArea"
+          onclick="document.getElementById('mImgInput').click()"
+          ondragover="dragOver(event,'m')" ondragleave="dragLeave('m')" ondrop="dropImg(event,'m')">
+          <div class="img-upload-icon">🖼️</div>
+          <div class="img-upload-txt">คลิกหรือลากรูปมาวางที่นี่<br><strong>JPG, PNG, GIF</strong> ขนาดไม่เกิน 2MB</div>
+        </div>
+        <input type="file" id="mImgInput" accept="image/*" style="display:none" onchange="handleImg(event,'m')">
+        <div class="img-size-warn" id="mImgWarn">⚠️ รูปภาพมีขนาดใหญ่เกิน 2MB กรุณาเลือกรูปที่มีขนาดเล็กกว่า</div>
+        <div class="img-preview-wrap" id="mImgPreviewWrap">
+          <img class="img-preview" id="mImgPreview" alt="preview">
+          <button class="img-remove" onclick="removeImg('m')">✕</button>
+        </div>
+        <input type="hidden" id="mAnnImg">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveModal()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════
+const APPS_URL = 'https://script.google.com/macros/s/AKfycbxN9NN1OhUHMHeRPs7TMANCgMT1QM-1s8a3422dZmsMHUn0OyusXtoMHhtSf1fNBjJ6/exec';
+const FORM_BASE = 'form.html'; // เปลี่ยนเป็น URL จริงของ form.html หลัง deploy
+
+// ── State ──────────────────────────────
+let adminToken = null;
+let meetings = [];
+
+// ══════════════════════════════════════════
+// DATE PICKER
+// ══════════════════════════════════════════
+const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+  'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const THAI_DAYS = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+
+// calState[prefix] = { year, month }  (Gregorian)
+const calState = {};
+
+function initCal(prefix) {
+  if (!calState[prefix]) {
+    const now = new Date();
+    calState[prefix] = { year: now.getFullYear(), month: now.getMonth() };
+  }
+}
+
+function toggleCal(prefix) {
+  initCal(prefix);
+  const cal = document.getElementById(prefix + 'DateCal');
+  const isOpen = cal.classList.contains('show');
+  // close all others first
+  document.querySelectorAll('.date-cal.show').forEach(c => c.classList.remove('show'));
+  document.querySelectorAll('.date-display.open').forEach(d => d.classList.remove('open'));
+  if (!isOpen) {
+    renderCal(prefix);
+    cal.classList.add('show');
+    document.getElementById(prefix + 'DateDisplay').classList.add('open');
+  }
+}
+
+function renderCal(prefix) {
+  const { year, month } = calState[prefix];
+  const selectedVal = document.getElementById(prefix + 'Date').value; // "YYYY-MM-DD"
+  const today = new Date();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const buddhistYear = year + 543;
+
+  let html = `<div class="cal-header">
+    <button class="cal-nav" onclick="prevMonth('${prefix}')">‹</button>
+    <div class="cal-month-title">${THAI_MONTHS[month]} ${buddhistYear}</div>
+    <button class="cal-nav" onclick="nextMonth('${prefix}')">›</button>
+  </div>
+  <div class="cal-days-header">${THAI_DAYS.map(d=>`<div class="cal-day-name">${d}</div>`).join('')}</div>
+  <div class="cal-days">`;
+
+  // empty cells
+  for (let i = 0; i < firstDay; i++) html += '<div class="cal-day empty"></div>';
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = d===today.getDate() && month===today.getMonth() && year===today.getFullYear();
+    const isSelected = dateStr === selectedVal;
+    html += `<div class="cal-day${isToday?' today':''}${isSelected?' selected':''}"
+      onclick="selectDate('${prefix}','${dateStr}',${d},${month},${year})">${d}</div>`;
+  }
+  html += '</div>';
+  document.getElementById(prefix + 'DateCal').innerHTML = html;
+}
+
+function prevMonth(prefix) {
+  calState[prefix].month--;
+  if (calState[prefix].month < 0) { calState[prefix].month = 11; calState[prefix].year--; }
+  renderCal(prefix);
+}
+function nextMonth(prefix) {
+  calState[prefix].month++;
+  if (calState[prefix].month > 11) { calState[prefix].month = 0; calState[prefix].year++; }
+  renderCal(prefix);
+}
+
+function selectDate(prefix, dateStr, d, month, year) {
+  document.getElementById(prefix + 'Date').value = dateStr;
+  const buddhistYear = year + 543;
+  const display = `${d} ${THAI_MONTHS[month]} ${buddhistYear}`;
+  const el = document.getElementById(prefix + 'DateText');
+  el.textContent = display;
+  const displayEl = document.getElementById(prefix + 'DateDisplay');
+  displayEl.classList.remove('placeholder','open');
+  document.getElementById(prefix + 'DateCal').classList.remove('show');
+}
+
+// close cal on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('.date-picker-wrap')) {
+    document.querySelectorAll('.date-cal.show').forEach(c => c.classList.remove('show'));
+    document.querySelectorAll('.date-display.open').forEach(d => d.classList.remove('open'));
+  }
+});
+
+// helper: set date from existing value (for edit modal)
+function setCalDate(prefix, thaiDateStr) {
+  if (!thaiDateStr) return;
+  // thaiDateStr เช่น "15 มกราคม 2568"
+  const parts = thaiDateStr.trim().split(' ');
+  if (parts.length < 3) {
+    document.getElementById(prefix + 'DateText').textContent = thaiDateStr;
+    document.getElementById(prefix + 'DateDisplay').classList.remove('placeholder');
+    return;
+  }
+  const d = parseInt(parts[0]);
+  const mIdx = THAI_MONTHS.indexOf(parts[1]);
+  const buddhistYear = parseInt(parts[2]);
+  const gregYear = buddhistYear > 2500 ? buddhistYear - 543 : buddhistYear;
+  if (mIdx >= 0 && !isNaN(d) && !isNaN(gregYear)) {
+    const dateStr = `${gregYear}-${String(mIdx+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    calState[prefix] = { year: gregYear, month: mIdx };
+    selectDate(prefix, dateStr, d, mIdx, gregYear);
+  } else {
+    document.getElementById(prefix + 'DateText').textContent = thaiDateStr;
+    document.getElementById(prefix + 'DateDisplay').classList.remove('placeholder');
+  }
+}
+
+// ══════════════════════════════════════════
+// IMAGE UPLOAD
+// ══════════════════════════════════════════
+const MAX_IMG_SIZE = 2 * 1024 * 1024; // 2MB
+
+function handleImg(event, prefix) {
+  const file = event.target.files[0];
+  if (!file) return;
+  processImgFile(file, prefix);
+}
+
+function dragOver(event, prefix) {
+  event.preventDefault();
+  document.getElementById(prefix + 'ImgArea').classList.add('dragover');
+}
+function dragLeave(prefix) {
+  document.getElementById(prefix + 'ImgArea').classList.remove('dragover');
+}
+function dropImg(event, prefix) {
+  event.preventDefault();
+  dragLeave(prefix);
+  const file = event.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) processImgFile(file, prefix);
+}
+
+function processImgFile(file, prefix) {
+  const warn = document.getElementById(prefix + 'ImgWarn');
+  if (file.size > MAX_IMG_SIZE) {
+    warn.style.display = 'block';
+    return;
+  }
+  warn.style.display = 'none';
+  const reader = new FileReader();
+  reader.onload = e => {
+    const base64 = e.target.result;
+    document.getElementById(prefix + 'AnnImg').value = base64;
+    document.getElementById(prefix + 'ImgPreview').src = base64;
+    document.getElementById(prefix + 'ImgPreviewWrap').style.display = 'block';
+    document.getElementById(prefix + 'ImgArea').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImg(prefix) {
+  document.getElementById(prefix + 'AnnImg').value = '';
+  document.getElementById(prefix + 'ImgPreview').src = '';
+  document.getElementById(prefix + 'ImgPreviewWrap').style.display = 'none';
+  document.getElementById(prefix + 'ImgArea').style.display = 'block';
+  document.getElementById(prefix + 'ImgInput').value = '';
+}
+
+function setImgPreview(prefix, src) {
+  if (!src) return;
+  document.getElementById(prefix + 'AnnImg').value = src;
+  document.getElementById(prefix + 'ImgPreview').src = src;
+  document.getElementById(prefix + 'ImgPreviewWrap').style.display = 'block';
+  document.getElementById(prefix + 'ImgArea').style.display = 'none';
+}
+
+// ══════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════
+async function doLogin(){
+  const pw = document.getElementById('pwInput').value;
+  if(!pw) return;
+  try{
+    const res = await fetch(APPS_URL,{method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'adminLogin',password:pw})});
+    // no-cors ไม่คืนค่า — ใช้ password ตรง ๆ ฝั่ง client แทน
+    // (ระบบนี้ security เบื้องต้น)
+    if(pw==='#S@pa6191'){
+      adminToken='admin_ok';
+      document.getElementById('loginScreen').style.display='none';
+      document.getElementById('adminScreen').style.display='block';
+      loadMeetings();
+    } else {
+      document.getElementById('loginErr').style.display='block';
+    }
+  }catch{
+    if(pw==='#S@pa6191'){
+      adminToken='admin_ok';
+      document.getElementById('loginScreen').style.display='none';
+      document.getElementById('adminScreen').style.display='block';
+      loadMeetings();
+    } else {
+      document.getElementById('loginErr').style.display='block';
+    }
+  }
+}
+
+function logout(){
+  adminToken=null; meetings=[];
+  document.getElementById('adminScreen').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('pwInput').value='';
+}
+
+// ══════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════
+function switchTab(n){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n));
+  document.querySelectorAll('.tab-panel').forEach((p,i)=>p.classList.toggle('active',i===n));
+  if(n===2) loadResponses();
+}
+
+// ══════════════════════════════════════════
+// MEETINGS
+// ══════════════════════════════════════════
+async function loadMeetings(){
+  document.getElementById('meetingList').innerHTML='<div class="spinner"></div>';
+  try{
+    const res=await fetch(`${APPS_URL}?action=getMeetings`);
+    const data=await res.json();
+    meetings=data.meetings||[];
+    renderMeetings();
+  }catch(e){
+    document.getElementById('meetingList').innerHTML='<div style="color:var(--red);font-size:.85rem;">โหลดข้อมูลไม่สำเร็จ</div>';
+  }
+}
+
+function renderMeetings(){
+  const el=document.getElementById('meetingList');
+  if(!meetings.length){el.innerHTML='<div style="text-align:center;color:var(--gray-400);padding:40px;font-size:.88rem;">ยังไม่มีแบบฟอร์ม กรุณาเพิ่มแบบฟอร์มใหม่</div>';return;}
+  el.innerHTML = meetings.map(m=>{
+    const formUrl = `${FORM_BASE}?id=${m.id}`;
+    const active = m.active==='TRUE'||m.active===true;
+    return `<div class="meeting-card ${active?'':'inactive'}">
+      <div class="m-icon">📋</div>
+      <div class="m-info">
+        <div class="m-committee">${esc(m.committee_name)}</div>
+        <div class="m-title">${esc(m.title)}</div>
+        <div class="m-meta">📅 ${esc(m.date)} &nbsp;|&nbsp; 📍 ${esc(m.place)}</div>
+        <div class="qr-box" style="margin-top:8px;">
+          <div class="qr-url">${formUrl}</div>
+          <button class="copy-btn" onclick="copyUrl('${formUrl}')">📋 คัดลอก</button>
+        </div>
+      </div>
+      <div class="m-actions" style="flex-direction:column;align-items:flex-end;gap:6px;">
+        <span class="m-badge ${active?'active':'inactive'}">${active?'● ใช้งาน':'○ ปิด'}</span>
+        <button class="btn btn-ghost btn-sm" onclick="editMeeting('${m.id}')">✏️ แก้ไข</button>
+        ${active?`<button class="btn btn-danger btn-sm" onclick="toggleMeeting('${m.id}',false)">🚫 ปิด</button>`
+                :`<button class="btn btn-success btn-sm" onclick="toggleMeeting('${m.id}',true)">✅ เปิด</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function saveMeeting(){
+  const id=document.getElementById('editingId').value;
+  const dateVal = document.getElementById('fDate').value;
+  const dateDisplay = document.getElementById('fDateText').textContent;
+  const data={
+    action:'saveMeeting', adminToken,
+    meeting:{
+      id,
+      committee_name:val('fCommittee'),
+      title:val('fTitle'),
+      date: dateDisplay !== 'เลือกวันที่ประชุม' ? dateDisplay : '',
+      place:val('fPlace'),
+      announcement_text:val('fAnnText'),
+      announcement_image:document.getElementById('fAnnImg').value,
+    }
+  };
+  if(!data.meeting.committee_name||!data.meeting.title||!data.meeting.date||!data.meeting.place){
+    toast('⚠️ กรุณากรอกข้อมูลให้ครบถ้วน'); return;
+  }
+  try{
+    await fetch(APPS_URL,{method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    toast('✅ บันทึกเรียบร้อยแล้ว');
+    clearForm(); switchTab(0); setTimeout(loadMeetings,1200);
+  }catch(e){ toast('❌ บันทึกไม่สำเร็จ'); }
+}
+
+function clearForm(){
+  ['fCommittee','fTitle','fPlace','fAnnText'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('editingId').value='';
+  document.getElementById('formCardTitle').textContent='➕ เพิ่มแบบฟอร์มการประชุมใหม่';
+  // reset date picker
+  document.getElementById('fDate').value='';
+  document.getElementById('fDateText').textContent='เลือกวันที่ประชุม';
+  document.getElementById('fDateDisplay').classList.add('placeholder');
+  // reset image
+  removeImg('f');
+}
+
+function editMeeting(id){
+  const m=meetings.find(x=>x.id===id); if(!m) return;
+  document.getElementById('modalId').value=m.id;
+  document.getElementById('mCommittee').value=m.committee_name||'';
+  document.getElementById('mTitle').value=m.title||'';
+  document.getElementById('mPlace').value=m.place||'';
+  document.getElementById('mAnnText').value=m.announcement_text||'';
+  // date picker
+  if (m.date) setCalDate('m', m.date);
+  else { document.getElementById('mDateText').textContent='เลือกวันที่ประชุม'; document.getElementById('mDateDisplay').classList.add('placeholder'); }
+  // image
+  removeImg('m');
+  if (m.announcement_image) setImgPreview('m', m.announcement_image);
+  document.getElementById('editModal').classList.add('show');
+}
+
+async function saveModal(){
+  const id=document.getElementById('modalId').value;
+  const dateDisplay = document.getElementById('mDateText').textContent;
+  const data={
+    action:'saveMeeting', adminToken,
+    meeting:{
+      id,
+      committee_name:val('mCommittee'),
+      title:val('mTitle'),
+      date: dateDisplay !== 'เลือกวันที่ประชุม' ? dateDisplay : '',
+      place:val('mPlace'),
+      announcement_text:val('mAnnText'),
+      announcement_image:document.getElementById('mAnnImg').value,
+    }
+  };
+  try{
+    await fetch(APPS_URL,{method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    closeModal(); toast('✅ อัปเดตเรียบร้อยแล้ว');
+    setTimeout(loadMeetings,1200);
+  }catch(e){ toast('❌ บันทึกไม่สำเร็จ'); }
+}
+
+async function toggleMeeting(id, active){
+  const action = active ? 'saveMeeting' : 'deleteMeeting';
+  const m=meetings.find(x=>x.id===id);
+  const body = active
+    ? {action:'saveMeeting',adminToken,meeting:{...m,id,active:'TRUE'}}
+    : {action:'deleteMeeting',adminToken,meetingId:id};
+  try{
+    await fetch(APPS_URL,{method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    toast(active?'✅ เปิดใช้งานแล้ว':'🚫 ปิดการใช้งานแล้ว');
+    setTimeout(loadMeetings,1200);
+  }catch(e){ toast('❌ ดำเนินการไม่สำเร็จ'); }
+}
+
+function closeModal(){ document.getElementById('editModal').classList.remove('show'); }
+
+// ══════════════════════════════════════════
+// RESPONSES
+// ══════════════════════════════════════════
+async function loadResponses(){
+  document.getElementById('responseArea').innerHTML='<div class="spinner"></div>';
+  try{
+    const res=await fetch(`${APPS_URL}?action=getMeetings`);
+    const data=await res.json();
+    // responses ต้องดึงจาก Sheet โดยตรง — แสดง link ไปที่ Sheet แทน
+    renderResponsesInfo();
+  }catch(e){
+    renderResponsesInfo();
+  }
+}
+
+function renderResponsesInfo(){
+  const sheetUrl=`https://docs.google.com/spreadsheets/d/1AbP0UbTtV--HHuXSUJ8DP-rVhLetjGzOuNDrqdZVu_w/edit#gid=0`;
+  document.getElementById('responseArea').innerHTML=`
+    <div class="card" style="text-align:center;padding:32px;">
+      <div style="font-size:2rem;margin-bottom:14px;">📊</div>
+      <div style="font-family:'Prompt',sans-serif;font-size:1rem;font-weight:600;color:var(--navy);margin-bottom:8px;">ดูข้อมูลผู้ตอบรับใน Google Sheets</div>
+      <div style="font-size:.84rem;color:var(--gray-400);margin-bottom:20px;">ข้อมูลทั้งหมดถูกบันทึกใน Sheet "responses" ของ Google Sheets</div>
+      <a href="${sheetUrl}" target="_blank" class="btn btn-primary" style="text-decoration:none;display:inline-flex;">
+        📋 เปิด Google Sheets
+      </a>
+    </div>`;
+  // dummy stats
+  document.getElementById('statTotal').textContent='–';
+  document.getElementById('statAgency').textContent='–';
+  document.getElementById('statToday').textContent='–';
+}
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+function val(id){ return document.getElementById(id).value.trim(); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function copyUrl(url){
+  navigator.clipboard.writeText(url).then(()=>toast('✅ คัดลอก URL แล้ว')).catch(()=>{
+    const t=document.createElement('textarea'); t.value=url;
+    document.body.appendChild(t); t.select(); document.execCommand('copy');
+    document.body.removeChild(t); toast('✅ คัดลอก URL แล้ว');
+  });
+}
+
+let _tt;
+function toast(m){
+  const t=document.getElementById('toast'); t.textContent=m;
+  t.classList.add('show'); clearTimeout(_tt);
+  _tt=setTimeout(()=>t.classList.remove('show'),2800);
+}
+</script>
+</body>
+</html>
