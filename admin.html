@@ -95,7 +95,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--gray-50);min-height:100vh
   padding:16px 18px;margin-bottom:10px;border:1px solid var(--gray-200);
   display:flex;align-items:center;gap:14px;cursor:pointer;transition:box-shadow .2s;}
 .meeting-card:hover{box-shadow:var(--shadow-lg);}
-.meeting-card.inactive{opacity:.55;}
+.meeting-card.inactive{opacity:.45;filter:grayscale(40%);}
 .m-icon{width:44px;height:44px;background:var(--navy-pale);border-radius:10px;
   display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
 .m-info{flex:1;min-width:0;}
@@ -420,7 +420,7 @@ tr:hover td{background:var(--gray-50);}
 // ══════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════
-const APPS_URL = 'https://script.google.com/macros/s/AKfycbxWpnLP2Tldiqhb4UOycN8y8Wm6frIOM1s4cSWylQra3nXMH-iTbGmMtLQYP6ckQIhr/exec';
+const APPS_URL = 'https://script.google.com/macros/s/AKfycbxVuIXeulOSK4K0rIjgpRFnTqHecKpjW74Kfv2lwlesSOxOaTmxSPkP1CnvpWzaXHeA/exec';
 const FORM_BASE = 'https://amnatteenet.github.io/meeting-registration/form.html';
 
 // ── State ──────────────────────────────
@@ -670,19 +670,19 @@ function renderMeetings(){
     return `<div class="meeting-card ${active?'':'inactive'}">
       <div class="m-icon">📋</div>
       <div class="m-info">
-        <div class="m-committee">${esc(m.committee_name)}</div>
         <div class="m-title">${esc(m.title)}</div>
-        <div class="m-meta">📅 ${esc(m.date)} &nbsp;|&nbsp; 📍 ${esc(m.place)}</div>
+        <div class="m-meta">📅 ${formatDate(m.date)} &nbsp;|&nbsp; 📍 ${esc(m.place)}</div>
         <div class="qr-box" style="margin-top:8px;">
           <div class="qr-url">${formUrl}</div>
           <button class="copy-btn" onclick="copyUrl('${formUrl}')">📋 คัดลอก</button>
         </div>
       </div>
       <div class="m-actions" style="flex-direction:column;align-items:flex-end;gap:6px;">
-        <span class="m-badge ${active?'active':'inactive'}">${active?'● ใช้งาน':'○ ปิด'}</span>
         <button class="btn btn-ghost btn-sm" onclick="editMeeting('${m.id}')">✏️ แก้ไข</button>
-        ${active?`<button class="btn btn-danger btn-sm" onclick="toggleMeeting('${m.id}',false)">🚫 ปิด</button>`
-                :`<button class="btn btn-success btn-sm" onclick="toggleMeeting('${m.id}',true)">✅ เปิด</button>`}
+        ${active
+          ? `<button class="btn btn-danger btn-sm" onclick="toggleMeeting('${m.id}',false)" style="background:#fee2e2;color:#b91c1c;border:1.5px solid #fca5a5;">🚫 ปิดใช้งาน</button>`
+          : `<button class="btn btn-success btn-sm" onclick="toggleMeeting('${m.id}',true)" style="background:#1b6b44;color:#fff;border:none;">✅ เปิดใช้งาน</button>`
+        }
       </div>
     </div>`;
   }).join('');
@@ -820,6 +820,21 @@ function renderResponsesInfo(){
 // HELPERS
 // ══════════════════════════════════════════
 function val(id){ return document.getElementById(id).value.trim(); }
+function formatDate(d){
+  if(!d) return '-';
+  // ถ้าเป็น ISO format เช่น 2568-01-14T17:00:00.000Z ให้แปลงเป็นภาษาไทย
+  const isoMatch = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(isoMatch){
+    const y = parseInt(isoMatch[1]);
+    const m = parseInt(isoMatch[2]) - 1;
+    const day = parseInt(isoMatch[3]);
+    const MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+      'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    const buddhistY = y > 2400 ? y : y + 543;
+    return day + ' ' + MONTHS[m] + ' ' + buddhistY;
+  }
+  return d;
+}
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function copyUrl(url){
