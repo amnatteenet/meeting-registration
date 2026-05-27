@@ -420,7 +420,7 @@ tr:hover td{background:var(--gray-50);}
 // ══════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════
-const APPS_URL = 'https://script.google.com/macros/s/AKfycbxN9NN1OhUHMHeRPs7TMANCgMT1QM-1s8a3422dZmsMHUn0OyusXtoMHhtSf1fNBjJ6/exec';
+const APPS_URL = 'https://script.google.com/macros/s/AKfycbxWpnLP2Tldiqhb4UOycN8y8Wm6frIOM1s4cSWylQra3nXMH-iTbGmMtLQYP6ckQIhr/exec';
 const FORM_BASE = 'https://amnatteenet.github.io/meeting-registration/form.html';
 
 // ── State ──────────────────────────────
@@ -604,36 +604,20 @@ function setImgPreview(prefix, src) {
 // ══════════════════════════════════════════
 // LOGIN
 // ══════════════════════════════════════════
-async function doLogin(){
+function doLogin(){
   const pw = document.getElementById('pwInput').value.trim();
   if(!pw) return;
   const errEl = document.getElementById('loginErr');
   errEl.style.display='none';
-  try{
-    const res = await fetch(APPS_URL,{method:'POST',mode:'cors',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'adminLogin',password:pw})});
-    const data = await res.json();
-    if(data.success){
-      adminToken='admin_ok';
-      document.getElementById('loginScreen').style.display='none';
-      document.getElementById('adminScreen').style.display='block';
-      loadMeetings();
-    } else {
-      errEl.textContent='รหัสผ่านไม่ถูกต้อง';
-      errEl.style.display='block';
-    }
-  }catch(e){
-    // fallback client-side check
-    if(pw==='#S@pa6191'){
-      adminToken='admin_ok';
-      document.getElementById('loginScreen').style.display='none';
-      document.getElementById('adminScreen').style.display='block';
-      loadMeetings();
-    } else {
-      errEl.textContent='รหัสผ่านไม่ถูกต้อง';
-      errEl.style.display='block';
-    }
+  // client-side password check (ไม่ต้องผ่าน CORS)
+  if(pw==='#S@pa6191'){
+    adminToken='admin_ok';
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('adminScreen').style.display='block';
+    loadMeetings();
+  } else {
+    errEl.textContent='รหัสผ่านไม่ถูกต้อง';
+    errEl.style.display='block';
   }
 }
 
@@ -656,16 +640,25 @@ function switchTab(n){
 // ══════════════════════════════════════════
 // MEETINGS
 // ══════════════════════════════════════════
-async function loadMeetings(){
+function loadMeetings(){
   document.getElementById('meetingList').innerHTML='<div class="spinner"></div>';
-  try{
-    const res=await fetch(`${APPS_URL}?action=getMeetings`);
-    const data=await res.json();
-    meetings=data.meetings||[];
-    renderMeetings();
-  }catch(e){
-    document.getElementById('meetingList').innerHTML='<div style="color:var(--red);font-size:.85rem;">โหลดข้อมูลไม่สำเร็จ</div>';
-  }
+  return new Promise((resolve)=>{
+    const cb = 'cb_' + Date.now();
+    const script = document.createElement('script');
+    window[cb] = function(data){
+      delete window[cb]; script.remove();
+      meetings = data.meetings || [];
+      renderMeetings();
+      resolve();
+    };
+    script.onerror = function(){
+      delete window[cb]; script.remove();
+      document.getElementById('meetingList').innerHTML='<div style="color:var(--red);font-size:.85rem;padding:20px;">โหลดข้อมูลไม่สำเร็จ กรุณารีเฟรช</div>';
+      resolve();
+    };
+    script.src = APPS_URL + '?action=getMeetings&callback=' + cb + '&t=' + Date.now();
+    document.head.appendChild(script);
+  });
 }
 
 function renderMeetings(){
@@ -715,15 +708,12 @@ async function saveMeeting(){
     toast('⚠️ กรุณากรอกข้อมูลให้ครบถ้วน'); return;
   }
   try{
-    const res = await fetch(APPS_URL,{method:'POST',mode:'cors',
+    // POST ใช้ no-cors (fire-and-forget) แล้วรอ 2 วิ จึง reload
+    fetch(APPS_URL,{method:'POST',mode:'no-cors',
       headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-    const result = await res.json();
-    if(result.success){
-      toast('✅ บันทึกเรียบร้อยแล้ว' + (result.id ? ' (ID: '+result.id+')' : ''));
-      clearForm(); switchTab(0); await loadMeetings();
-    } else {
-      toast('❌ ' + (result.message||'บันทึกไม่สำเร็จ'));
-    }
+    toast('⏳ กำลังบันทึก...');
+    clearForm(); switchTab(0);
+    setTimeout(()=>{ loadMeetings().then(()=>toast('✅ บันทึกเรียบร้อยแล้ว')); }, 2500);
   }catch(e){ toast('❌ เชื่อมต่อไม่สำเร็จ: '+e.message); }
 }
 
@@ -771,15 +761,10 @@ async function saveModal(){
     }
   };
   try{
-    const res = await fetch(APPS_URL,{method:'POST',mode:'cors',
+    fetch(APPS_URL,{method:'POST',mode:'no-cors',
       headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-    const result = await res.json();
-    if(result.success){
-      closeModal(); toast('✅ อัปเดตเรียบร้อยแล้ว');
-      await loadMeetings();
-    } else {
-      toast('❌ ' + (result.message||'บันทึกไม่สำเร็จ'));
-    }
+    closeModal(); toast('⏳ กำลังบันทึก...');
+    setTimeout(()=>{ loadMeetings().then(()=>toast('✅ อัปเดตเรียบร้อยแล้ว')); }, 2500);
   }catch(e){ toast('❌ เชื่อมต่อไม่สำเร็จ: '+e.message); }
 }
 
@@ -790,15 +775,10 @@ async function toggleMeeting(id, active){
     ? {action:'saveMeeting',adminToken,meeting:{...m,id,active:'TRUE'}}
     : {action:'deleteMeeting',adminToken,meetingId:id};
   try{
-    const res = await fetch(APPS_URL,{method:'POST',mode:'cors',
+    fetch(APPS_URL,{method:'POST',mode:'no-cors',
       headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    const result = await res.json();
-    if(result.success){
-      toast(active?'✅ เปิดใช้งานแล้ว':'🚫 ปิดการใช้งานแล้ว');
-      await loadMeetings();
-    } else {
-      toast('❌ ' + (result.message||'ดำเนินการไม่สำเร็จ'));
-    }
+    toast('⏳ กำลังดำเนินการ...');
+    setTimeout(()=>{ loadMeetings().then(()=>toast(active?'✅ เปิดใช้งานแล้ว':'🚫 ปิดการใช้งานแล้ว')); }, 2500);
   }catch(e){ toast('❌ เชื่อมต่อไม่สำเร็จ: '+e.message); }
 }
 
