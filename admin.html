@@ -421,7 +421,7 @@ tr:hover td{background:var(--gray-50);}
 // CONFIG
 // ══════════════════════════════════════════
 const APPS_URL = 'https://script.google.com/macros/s/AKfycbxN9NN1OhUHMHeRPs7TMANCgMT1QM-1s8a3422dZmsMHUn0OyusXtoMHhtSf1fNBjJ6/exec';
-const FORM_BASE = 'form.html'; // เปลี่ยนเป็น URL จริงของ form.html หลัง deploy
+const FORM_BASE = 'https://amnatteenet.github.io/meeting-registration/form.html';
 
 // ── State ──────────────────────────────
 let adminToken = null;
@@ -605,30 +605,34 @@ function setImgPreview(prefix, src) {
 // LOGIN
 // ══════════════════════════════════════════
 async function doLogin(){
-  const pw = document.getElementById('pwInput').value;
+  const pw = document.getElementById('pwInput').value.trim();
   if(!pw) return;
+  const errEl = document.getElementById('loginErr');
+  errEl.style.display='none';
   try{
-    const res = await fetch(APPS_URL,{method:'POST',mode:'no-cors',
+    const res = await fetch(APPS_URL,{method:'POST',mode:'cors',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({action:'adminLogin',password:pw})});
-    // no-cors ไม่คืนค่า — ใช้ password ตรง ๆ ฝั่ง client แทน
-    // (ระบบนี้ security เบื้องต้น)
-    if(pw==='#S@pa6191'){
+    const data = await res.json();
+    if(data.success){
       adminToken='admin_ok';
       document.getElementById('loginScreen').style.display='none';
       document.getElementById('adminScreen').style.display='block';
       loadMeetings();
     } else {
-      document.getElementById('loginErr').style.display='block';
+      errEl.textContent='รหัสผ่านไม่ถูกต้อง';
+      errEl.style.display='block';
     }
-  }catch{
+  }catch(e){
+    // fallback client-side check
     if(pw==='#S@pa6191'){
       adminToken='admin_ok';
       document.getElementById('loginScreen').style.display='none';
       document.getElementById('adminScreen').style.display='block';
       loadMeetings();
     } else {
-      document.getElementById('loginErr').style.display='block';
+      errEl.textContent='รหัสผ่านไม่ถูกต้อง';
+      errEl.style.display='block';
     }
   }
 }
@@ -711,11 +715,16 @@ async function saveMeeting(){
     toast('⚠️ กรุณากรอกข้อมูลให้ครบถ้วน'); return;
   }
   try{
-    await fetch(APPS_URL,{method:'POST',mode:'no-cors',
+    const res = await fetch(APPS_URL,{method:'POST',mode:'cors',
       headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-    toast('✅ บันทึกเรียบร้อยแล้ว');
-    clearForm(); switchTab(0); setTimeout(loadMeetings,1200);
-  }catch(e){ toast('❌ บันทึกไม่สำเร็จ'); }
+    const result = await res.json();
+    if(result.success){
+      toast('✅ บันทึกเรียบร้อยแล้ว' + (result.id ? ' (ID: '+result.id+')' : ''));
+      clearForm(); switchTab(0); await loadMeetings();
+    } else {
+      toast('❌ ' + (result.message||'บันทึกไม่สำเร็จ'));
+    }
+  }catch(e){ toast('❌ เชื่อมต่อไม่สำเร็จ: '+e.message); }
 }
 
 function clearForm(){
@@ -762,11 +771,16 @@ async function saveModal(){
     }
   };
   try{
-    await fetch(APPS_URL,{method:'POST',mode:'no-cors',
+    const res = await fetch(APPS_URL,{method:'POST',mode:'cors',
       headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-    closeModal(); toast('✅ อัปเดตเรียบร้อยแล้ว');
-    setTimeout(loadMeetings,1200);
-  }catch(e){ toast('❌ บันทึกไม่สำเร็จ'); }
+    const result = await res.json();
+    if(result.success){
+      closeModal(); toast('✅ อัปเดตเรียบร้อยแล้ว');
+      await loadMeetings();
+    } else {
+      toast('❌ ' + (result.message||'บันทึกไม่สำเร็จ'));
+    }
+  }catch(e){ toast('❌ เชื่อมต่อไม่สำเร็จ: '+e.message); }
 }
 
 async function toggleMeeting(id, active){
@@ -776,11 +790,16 @@ async function toggleMeeting(id, active){
     ? {action:'saveMeeting',adminToken,meeting:{...m,id,active:'TRUE'}}
     : {action:'deleteMeeting',adminToken,meetingId:id};
   try{
-    await fetch(APPS_URL,{method:'POST',mode:'no-cors',
+    const res = await fetch(APPS_URL,{method:'POST',mode:'cors',
       headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    toast(active?'✅ เปิดใช้งานแล้ว':'🚫 ปิดการใช้งานแล้ว');
-    setTimeout(loadMeetings,1200);
-  }catch(e){ toast('❌ ดำเนินการไม่สำเร็จ'); }
+    const result = await res.json();
+    if(result.success){
+      toast(active?'✅ เปิดใช้งานแล้ว':'🚫 ปิดการใช้งานแล้ว');
+      await loadMeetings();
+    } else {
+      toast('❌ ' + (result.message||'ดำเนินการไม่สำเร็จ'));
+    }
+  }catch(e){ toast('❌ เชื่อมต่อไม่สำเร็จ: '+e.message); }
 }
 
 function closeModal(){ document.getElementById('editModal').classList.remove('show'); }
