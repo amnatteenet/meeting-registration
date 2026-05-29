@@ -433,28 +433,51 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // ── Load meeting from Apps Script ──────
 async function loadMeeting(id) {
-  await new Promise((resolve)=>{
-    const cb = 'cb_' + Date.now();
-    const script = document.createElement('script');
-    window[cb] = function(data){
-      delete window[cb]; script.remove();
-      if(data.success){
-        meeting = data.meeting;
-        renderHeader(meeting);
-        renderAnnouncement(meeting);
-      } else {
-        showError('ไม่พบข้อมูลการประชุม กรุณาตรวจสอบ QR Code');
-      }
-      resolve();
-    };
-    script.onerror = function(){
-      delete window[cb]; script.remove();
-      showError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่ หรือเปิดลิงก์โดยตรงแทนการ scan QR');
-      resolve();
-    };
-    script.src = APPS_URL + '?action=getMeeting&id=' + id + '&callback=' + cb;
-    document.head.appendChild(script);
-  });
+  try {
+    // ใช้ fetch แทน JSONP เพื่อรองรับ redirect ของ Google Apps Script
+    const url = APPS_URL + '?action=getMeeting&id=' + encodeURIComponent(id);
+    const res = await fetch(url, { redirect: 'follow' });
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch(e) {
+      // ถ้าเป็น JSONP ให้ strip callback wrapper
+      const match = text.match(/^\w+\((.+)\);?\s*$/s);
+      if (match) data = JSON.parse(match[1]);
+    }
+    if (data && data.success) {
+      meeting = data.meeting;
+      renderHeader(meeting);
+      renderAnnouncement(meeting);
+    } else {
+      showError('ไม่พบข้อมูลการประชุม กรุณาตรวจสอบ QR Code');
+    }
+  } catch(e) {
+    // fallback: JSONP
+    await new Promise((resolve) => {
+      const cb = 'cb_' + Date.now();
+      const script = document.createElement('script');
+      window[cb] = function(data) {
+        delete window[cb]; script.remove();
+        if (data.success) {
+          meeting = data.meeting;
+          renderHeader(meeting);
+          renderAnnouncement(meeting);
+        } else {
+          showError('ไม่พบข้อมูลการประชุม กรุณาตรวจสอบ QR Code');
+        }
+        resolve();
+      };
+      script.onerror = function() {
+        delete window[cb]; script.remove();
+        showError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่');
+        resolve();
+      };
+      script.src = APPS_URL + '?action=getMeeting&id=' + encodeURIComponent(id) + '&callback=' + cb;
+      document.head.appendChild(script);
+    });
+  }
   document.getElementById('loadingMeeting').style.display = 'none';
   document.getElementById('page1Content').style.display = 'block';
 }
