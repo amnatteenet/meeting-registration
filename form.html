@@ -411,8 +411,22 @@ let attendees = [];
 
 // ── Init ───────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  const params = new URLSearchParams(window.location.search);
-  const id = params.get('id') || 'MTG001';
+  // รองรับทั้ง ?id=xxx และ #id=xxx (บางแอป QR scanner แปลง ? เป็น #)
+  let id = new URLSearchParams(window.location.search).get('id');
+  if (!id && window.location.hash) {
+    id = new URLSearchParams(window.location.hash.replace('#', '?')).get('id');
+  }
+  if (!id) {
+    // ลองดึงจาก URL โดยตรง กรณี scanner ตัด query string
+    const match = window.location.href.match(/[?&#]id=([^&#+]+)/);
+    if (match) id = decodeURIComponent(match[1]);
+  }
+  if (!id) {
+    showError('ไม่พบรหัสการประชุม กรุณา scan QR Code ใหม่อีกครั้ง');
+    document.getElementById('loadingMeeting').style.display = 'none';
+    document.getElementById('page1Content').style.display = 'block';
+    return;
+  }
   await loadMeeting(id);
   loadSavedAgency();
 });
@@ -435,7 +449,7 @@ async function loadMeeting(id) {
     };
     script.onerror = function(){
       delete window[cb]; script.remove();
-      showError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่');
+      showError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่ หรือเปิดลิงก์โดยตรงแทนการ scan QR');
       resolve();
     };
     script.src = APPS_URL + '?action=getMeeting&id=' + id + '&callback=' + cb;
