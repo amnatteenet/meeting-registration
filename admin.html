@@ -670,6 +670,7 @@ function renderMeetings(){
     return `<div class="meeting-card ${active?'':'inactive'}">
       <div class="m-icon">📋</div>
       <div class="m-info">
+        ${m.committee_name ? `<div class="m-committee">${esc(m.committee_name)}</div>` : ''}
         <div class="m-title">${esc(m.title)}</div>
         <div class="m-meta">📅 ${formatDate(m.date)} &nbsp;|&nbsp; 📍 ${esc(m.place)}</div>
         <div class="qr-box" style="margin-top:8px;">
@@ -887,15 +888,24 @@ function generateAllQR() {
       correctLevel: QRCode.CorrectLevel.H
     });
 
-    setTimeout(() => {
-      const qrImg = tmp.querySelector('img') || tmp.querySelector('canvas');
-      if (!qrImg) { tmp.remove(); return; }
-
-      const src = qrImg.src || qrImg.toDataURL();
-      const img = new Image();
-      img.onload = () => {
-        ctx.clearRect(0, 0, size, size);
-        ctx.drawImage(img, 0, 0, size, size);
+    // QRCode library renders synchronously into img/canvas inside tmp
+    // Use MutationObserver or just requestAnimationFrame to wait for DOM paint
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        // ลอง canvas ก่อน จาก QRCode
+        const qrCanvas = tmp.querySelector('canvas');
+        if (qrCanvas) {
+          ctx.clearRect(0, 0, size, size);
+          ctx.drawImage(qrCanvas, 0, 0, size, size);
+        } else {
+          // fallback: img element
+          const qrImg = tmp.querySelector('img');
+          if (qrImg && qrImg.complete && qrImg.naturalWidth > 0) {
+            ctx.clearRect(0, 0, size, size);
+            ctx.drawImage(qrImg, 0, 0, size, size);
+          }
+        }
+        tmp.remove();
 
         // วาด logo ตรงกลาง
         const logo = new Image();
@@ -919,10 +929,8 @@ function generateAllQR() {
           ctx.restore();
         };
         logo.src = LOGO_SRC;
-      };
-      img.src = src;
-      tmp.remove();
-    }, 300);
+      });
+    });
   });
 }
 
