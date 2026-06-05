@@ -521,25 +521,15 @@ document.addEventListener('click', e => {
 // helper: set date from existing value (for edit modal)
 function setCalDate(prefix, thaiDateStr) {
   if (!thaiDateStr) return;
-        if (String(thaiDateStr).includes('T')) {
-          // ดึง year/month/day จาก ISO string โดยตรง ไม่ผ่าน new Date() เพราะปี พ.ศ. จะผิด
-          const isoM = String(thaiDateStr).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2})/);
-          if (isoM) {
-            let y = parseInt(isoM[1]);
-            let mo = parseInt(isoM[2]) - 1;
-            let d = parseInt(isoM[3]);
-            const h = parseInt(isoM[4]);
-            // UTC+7: ถ้าชั่วโมง UTC >= 17 แสดงว่าวันถัดไปในไทย
-            if (h >= 17) {
-              d++;
-              const dMax = new Date(y > 2500 ? y - 543 : y, mo + 1, 0).getDate();
-              if (d > dMax) { d = 1; mo++; if (mo > 11) { mo = 0; y++; } }
-            }
-            // y คือปี พ.ศ. อยู่แล้ว (Sheet เก็บปี พ.ศ.)
-            const buddhistY = y < 2500 ? y + 543 : y;
-            thaiDateStr = d + ' ' + THAI_MONTHS[mo] + ' ' + buddhistY;
-          }
-        }
+    if (String(thaiDateStr).includes('T')) {
+      const isoT = String(thaiDateStr).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2})/);
+      if (isoT) {
+        let y=parseInt(isoT[1]), mo=parseInt(isoT[2])-1, d=parseInt(isoT[3]), h=parseInt(isoT[4]);
+        if (h >= 17) { d++; const dim=new Date(2000,mo+1,0).getDate(); if(d>dim){d=1;mo++;if(mo>11){mo=0;y++;}} }
+        const buddhistY = y < 2500 ? y + 543 : y;
+        thaiDateStr = d + ' ' + THAI_MONTHS[mo] + ' ' + buddhistY;
+      }
+    }
   // thaiDateStr เช่น "15 มกราคม 2568"
   const parts = thaiDateStr.trim().split(' ');
   if (parts.length < 3) {
@@ -879,11 +869,16 @@ function formatDate(d){
   const s = String(d);
   // ISO ที่มี T เช่น 2026-06-10T17:00:00.000Z ต้องบวก UTC+7 ก่อน
   if(s.includes('T')){
-    const dt = new Date(s);
-    const th = new Date(dt.getTime() + 7 * 3600000);
-    const y = th.getUTCFullYear();
-    const buddhistY = y < 2400 ? y + 543 : y;
-    return th.getUTCDate() + ' ' + MONTHS[th.getUTCMonth()] + ' ' + buddhistY;
+    // ดึงจาก ISO string โดยตรง ไม่ผ่าน new Date() เพราะปี พ.ศ. ใน string จะถูกตีความผิด
+    const isoT = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2})/);
+    if(isoT){
+      let y=parseInt(isoT[1]), mo=parseInt(isoT[2])-1, d=parseInt(isoT[3]), h=parseInt(isoT[4]);
+      // UTC+7: ถ้า hour UTC >= 17 = เที่ยงคืนหรือหลังในไทย → วันถัดไป
+      if(h >= 17){ d++; const dim=new Date(2000,mo+1,0).getDate(); if(d>dim){d=1;mo++;if(mo>11){mo=0;y++;}} }
+      // y คือปี พ.ศ. อยู่แล้ว (Sheet เก็บปี พ.ศ.)
+      const buddhistY = y < 2500 ? y + 543 : y;
+      return d + ' ' + MONTHS[mo] + ' ' + buddhistY;
+    }
   }
   // YYYY-MM-DD ธรรมดา ดึงตรงๆ
   const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
