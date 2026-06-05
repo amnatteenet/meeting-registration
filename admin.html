@@ -11,7 +11,7 @@
   --gold:#C9A84C; --gold-light:#F0DC9A;
   --white:#FFFFFF; --gray-50:#F7F9FC; --gray-100:#EEF2F9; --gray-200:#D5DFF0;
   --gray-400:#8A9BBF; --gray-600:#4A5878;
-  --green:#1B6B44; --green-bg:#E6F4ED;
+  --green:#1B6B44; --green-bg:#E6F4ED;h
   --red:#B91C1C; --red-bg:#FEE2E2;
   --orange:#B45309; --orange-bg:#FEF3C7;
   --radius:12px; --radius-sm:8px;
@@ -863,7 +863,7 @@ function formatDate(d){
     const day = parseInt(isoMatch[3]);
     const MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
       'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-    const buddhistY = y > 2400 ? y : y + 543;
+    const buddhistY = y < 2400 ? y + 543 : y;
     return day + ' ' + MONTHS[m] + ' ' + buddhistY;
   }
   return d;
