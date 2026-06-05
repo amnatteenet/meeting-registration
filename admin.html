@@ -521,15 +521,9 @@ document.addEventListener('click', e => {
 // helper: set date from existing value (for edit modal)
 function setCalDate(prefix, thaiDateStr) {
   if (!thaiDateStr) return;
-    // รองรับ ISO format จาก Google Sheets เช่น 2026-06-10T17:00:00.000Z
-    if (String(thaiDateStr).includes('T')) {
-          const dt = new Date(thaiDateStr);
-          const th = new Date(dt.getTime() + 7 * 3600000);
-          const d = th.getUTCDate();
-          const mIdx = th.getUTCMonth();
-          const gregYear = th.getUTCFullYear();
-          thaiDateStr = `${d} ${THAI_MONTHS[mIdx]} ${gregYear + 543}`;
-    }
+        if (String(thaiDateStr).includes('T')) {
+                thaiDateStr = formatDate(thaiDateStr);
+        }
   // thaiDateStr เช่น "15 มกราคม 2568"
   const parts = thaiDateStr.trim().split(' ');
   if (parts.length < 3) {
