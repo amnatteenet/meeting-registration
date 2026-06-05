@@ -855,16 +855,23 @@ function renderResponsesInfo(){
 function val(id){ return document.getElementById(id).value.trim(); }
 function formatDate(d){
   if(!d) return '-';
-  // ถ้าเป็น ISO format เช่น 2568-01-14T17:00:00.000Z ให้แปลงเป็นภาษาไทย
-  const s=String(d); if(s.includes('T')){const dt=new Date(s);const th=new Date(dt.getTime()+7*3600000);const buddhistY=th.getUTCFullYear()<2400?th.getUTCFullYear()+543:th.getUTCFullYear();return th.getUTCDate()+' '+MONTHS[th.getUTCMonth()]+' '+buddhistY;} const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+    'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const s = String(d);
+  // ISO ที่มี T เช่น 2026-06-10T17:00:00.000Z ต้องบวก UTC+7 ก่อน
+  if(s.includes('T')){
+    const dt = new Date(s);
+    const th = new Date(dt.getTime() + 7 * 3600000);
+    const y = th.getUTCFullYear();
+    const buddhistY = y < 2400 ? y + 543 : y;
+    return th.getUTCDate() + ' ' + MONTHS[th.getUTCMonth()] + ' ' + buddhistY;
+  }
+  // YYYY-MM-DD ธรรมดา ดึงตรงๆ
+  const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if(isoMatch){
     const y = parseInt(isoMatch[1]);
-    const m = parseInt(isoMatch[2]) - 1;
-    const day = parseInt(isoMatch[3]);
-    const MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
-      'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
     const buddhistY = y < 2400 ? y + 543 : y;
-    return day + ' ' + MONTHS[m] + ' ' + buddhistY;
+    return parseInt(isoMatch[3]) + ' ' + MONTHS[parseInt(isoMatch[2])-1] + ' ' + buddhistY;
   }
   return d;
 }
