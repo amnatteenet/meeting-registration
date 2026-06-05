@@ -522,7 +522,23 @@ document.addEventListener('click', e => {
 function setCalDate(prefix, thaiDateStr) {
   if (!thaiDateStr) return;
         if (String(thaiDateStr).includes('T')) {
-                thaiDateStr = formatDate(thaiDateStr);
+          // ดึง year/month/day จาก ISO string โดยตรง ไม่ผ่าน new Date() เพราะปี พ.ศ. จะผิด
+          const isoM = String(thaiDateStr).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2})/);
+          if (isoM) {
+            let y = parseInt(isoM[1]);
+            let mo = parseInt(isoM[2]) - 1;
+            let d = parseInt(isoM[3]);
+            const h = parseInt(isoM[4]);
+            // UTC+7: ถ้าชั่วโมง UTC >= 17 แสดงว่าวันถัดไปในไทย
+            if (h >= 17) {
+              d++;
+              const dMax = new Date(y > 2500 ? y - 543 : y, mo + 1, 0).getDate();
+              if (d > dMax) { d = 1; mo++; if (mo > 11) { mo = 0; y++; } }
+            }
+            // y คือปี พ.ศ. อยู่แล้ว (Sheet เก็บปี พ.ศ.)
+            const buddhistY = y < 2500 ? y + 543 : y;
+            thaiDateStr = d + ' ' + THAI_MONTHS[mo] + ' ' + buddhistY;
+          }
         }
   // thaiDateStr เช่น "15 มกราคม 2568"
   const parts = thaiDateStr.trim().split(' ');
