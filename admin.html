@@ -856,7 +856,7 @@ function val(id){ return document.getElementById(id).value.trim(); }
 function formatDate(d){
   if(!d) return '-';
   // ถ้าเป็น ISO format เช่น 2568-01-14T17:00:00.000Z ให้แปลงเป็นภาษาไทย
-  const isoMatch = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const s=String(d); if(s.includes('T')){const dt=new Date(s);const th=new Date(dt.getTime()+7*3600000);const buddhistY=th.getUTCFullYear()<2400?th.getUTCFullYear()+543:th.getUTCFullYear();return th.getUTCDate()+' '+MONTHS[th.getUTCMonth()]+' '+buddhistY;} const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if(isoMatch){
     const y = parseInt(isoMatch[1]);
     const m = parseInt(isoMatch[2]) - 1;
