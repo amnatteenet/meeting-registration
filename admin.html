@@ -214,6 +214,12 @@ tr:hover td{background:var(--gray-50);}
   padding:8px 12px;font-size:.76rem;color:var(--orange);margin-top:8px;display:none;}
 
 /* ── SPINNER ── */
+.resp-table{width:100%;border-collapse:collapse;font-size:.84rem;}
+.resp-table th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:.78rem;}
+.resp-table td{padding:8px 10px;border-bottom:1px solid var(--gray-100);vertical-align:top;}
+.resp-table tbody tr.resp-row:hover{background:var(--gray-50);}
+.resp-meeting-card{transition:box-shadow .15s,transform .1s;}
+.resp-meeting-card:hover{box-shadow:0 4px 16px rgba(13,43,94,.13);transform:translateY(-1px);}
 .spinner{width:36px;height:36px;border:3px solid var(--gray-200);
   border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite;margin:30px auto;}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -331,7 +337,7 @@ tr:hover td{background:var(--gray-50);}
     <div class="tab-panel" id="panel2">
       <div class="sec-header">
         <div class="sec-title">ข้อมูลผู้ตอบรับ</div>
-        <button class="btn btn-ghost btn-sm" onclick="loadResponses()">🔄 รีเฟรช</button>
+        <button class="btn btn-ghost btn-sm" onclick="allResponsesData=[];loadResponses()">🔄 รีเฟรช</button>
       </div>
       <div class="stats-grid">
         <div class="stat-card">
@@ -829,33 +835,199 @@ function closeModal(){ document.getElementById('editModal').classList.remove('sh
 // ══════════════════════════════════════════
 // RESPONSES
 // ══════════════════════════════════════════
-async function loadResponses(){
-  document.getElementById('responseArea').innerHTML='<div class="spinner"></div>';
-  try{
-    const res=await fetch(`${APPS_URL}?action=getMeetings`);
-    const data=await res.json();
-    // responses ต้องดึงจาก Sheet โดยตรง — แสดง link ไปที่ Sheet แทน
-    renderResponsesInfo();
-  }catch(e){
-    renderResponsesInfo();
-  }
+function jsonpFetch(action, id, cb){
+  const cb_name = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  window[cb_name] = function(data){ delete window[cb_name]; script.remove(); cb(data); };
+  const script = document.createElement('script');
+  script.onerror = function(){ delete window[cb_name]; script.remove(); cb(null); };
+  script.src = APPS_URL + '?action=' + action + (id?'&id='+encodeURIComponent(id):'') + '&callback=' + cb_name + '&t=' + Date.now();
+  document.head.appendChild(script);
 }
 
-function renderResponsesInfo(){
-  const sheetUrl=`https://docs.google.com/spreadsheets/d/1AbP0UbTtV--HHuXSUJ8DP-rVhLetjGzOuNDrqdZVu_w/edit#gid=0`;
-  document.getElementById('responseArea').innerHTML=`
-    <div class="card" style="text-align:center;padding:32px;">
-      <div style="font-size:2rem;margin-bottom:14px;">📊</div>
-      <div style="font-family:'Prompt',sans-serif;font-size:1rem;font-weight:600;color:var(--navy);margin-bottom:8px;">ดูข้อมูลผู้ตอบรับใน Google Sheets</div>
-      <div style="font-size:.84rem;color:var(--gray-400);margin-bottom:20px;">ข้อมูลทั้งหมดถูกบันทึกใน Sheet "responses" ของ Google Sheets</div>
-      <a href="${sheetUrl}" target="_blank" class="btn btn-primary" style="text-decoration:none;display:inline-flex;">
-        📋 เปิด Google Sheets
-      </a>
+// ── state สำหรับ responses tab ──
+let allResponsesData = [];   // grouped rows ทั้งหมด
+let selectedMeetingId = null;
+
+async function loadResponses(){
+  document.getElementById('responseArea').innerHTML='<div class="spinner"></div>';
+  // โหลด meetings ก่อน (ต้องการ active/inactive info)
+  if(!meetings.length){
+    try{
+      const r=await fetch(`${APPS_URL}?action=getMeetings`);
+      const d=await r.json();
+      if(d.meetings) meetings=d.meetings;
+    }catch(e){}
+  }
+  // โหลด responses ทั้งหมด
+  jsonpFetch('getResponses', '', function(data){
+    if(!data || !data.ok){ 
+      document.getElementById('responseArea').innerHTML='<div class="card" style="text-align:center;padding:32px;color:var(--gray-400);">❌ โหลดข้อมูลไม่สำเร็จ</div>';
+      return;
+    }
+    allResponsesData = data.rows || [];
+    updateResponseStats();
+    renderMeetingList();
+  });
+}
+
+function updateResponseStats(){
+  const total = allResponsesData.reduce((s,r)=>s+(r.attendees?r.attendees.length:0),0);
+  const agencies = new Set(allResponsesData.map(r=>r.agency_name)).size;
+  const today = new Date();
+  const todayStr = today.toLocaleDateString('th-TH');
+  const todayCount = allResponsesData.filter(r=>{
+    try{ return new Date(r.timestamp).toLocaleDateString('th-TH')===todayStr; }catch(e){ return false; }
+  }).reduce((s,r)=>s+(r.attendees?r.attendees.length:0),0);
+  document.getElementById('statTotal').textContent = total||'0';
+  document.getElementById('statAgency').textContent = agencies||'0';
+  document.getElementById('statToday').textContent = todayCount||'0';
+}
+
+function renderMeetingList(){
+  selectedMeetingId = null;
+  const area = document.getElementById('responseArea');
+  if(!meetings.length){
+    area.innerHTML='<div class="card" style="text-align:center;padding:24px;color:var(--gray-400);">ไม่พบข้อมูลการประชุม</div>';
+    return;
+  }
+  const activeList = meetings.filter(m=>isActiveMeeting(m));
+  const inactiveList = meetings.filter(m=>!isActiveMeeting(m));
+
+  const countFor = id => allResponsesData.filter(r=>r.meeting_id===id).reduce((s,r)=>s+(r.attendees?r.attendees.length:0),0);
+  const submissionsFor = id => allResponsesData.filter(r=>r.meeting_id===id).length;
+
+  const buildCard = m => {
+    const active = isActiveMeeting(m);
+    const cnt = countFor(m.id);
+    const sub = submissionsFor(m.id);
+    return `<div class="meeting-card resp-meeting-card" onclick="openMeetingResponses('${m.id}')" style="cursor:pointer;">
+      <div class="m-body">
+        <div class="m-meta">
+          ${m.committee_name?`<div class="m-committee">${m.committee_name}</div>`:''}
+          <div class="m-title">${m.title||'(ไม่มีชื่อ)'}</div>
+          <div class="m-detail">📅 ${m.date||'-'} &nbsp;|&nbsp; 📍 ${m.place||'-'}</div>
+        </div>
+      </div>
+      <div class="m-actions" style="flex-direction:column;align-items:flex-end;gap:4px;min-width:90px;">
+        <span style="font-family:'Prompt',sans-serif;font-size:1.25rem;font-weight:700;color:var(--navy);">${cnt}</span>
+        <span style="font-size:.72rem;color:var(--gray-400);">คน / ${sub} หน่วยงาน</span>
+        <span style="font-size:.7rem;color:var(--navy-light);margin-top:4px;">ดูรายละเอียด ›</span>
+      </div>
     </div>`;
-  // dummy stats
-  document.getElementById('statTotal').textContent='–';
-  document.getElementById('statAgency').textContent='–';
-  document.getElementById('statToday').textContent='–';
+  };
+
+  let html = '';
+  if(activeList.length){
+    html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;margin-top:4px;">
+      <span style="background:var(--green-bg);color:var(--green);font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:20px;">✅ เปิดใช้งาน (${activeList.length})</span>
+      <div style="flex:1;height:1px;background:var(--gray-200);"></div>
+    </div>`;
+    html += activeList.map(buildCard).join('');
+  }
+  if(inactiveList.length){
+    html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;margin-top:${activeList.length?'20px':'4px'};">
+      <span style="background:var(--gray-100);color:var(--gray-400);font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:20px;">🚫 ปิดใช้งาน (${inactiveList.length})</span>
+      <div style="flex:1;height:1px;background:var(--gray-200);"></div>
+    </div>`;
+    html += inactiveList.map(buildCard).join('');
+  }
+  if(!html) html='<div class="card" style="text-align:center;padding:24px;color:var(--gray-400);">ยังไม่มีการตอบรับ</div>';
+  area.innerHTML = html;
+}
+
+function isActiveMeeting(m){
+  return m.active === true || String(m.active).toUpperCase() === 'TRUE';
+}
+
+function openMeetingResponses(meetingId){
+  selectedMeetingId = meetingId;
+  const m = meetings.find(x=>x.id===meetingId);
+  const rows = allResponsesData.filter(r=>r.meeting_id===meetingId);
+  const area = document.getElementById('responseArea');
+
+  let html = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+    <button class="btn btn-ghost btn-sm" onclick="renderMeetingList()" style="padding:6px 14px;">‹ กลับ</button>
+    <div>
+      ${m&&m.committee_name?`<div style="font-size:.78rem;color:var(--gold);font-weight:700;">${m.committee_name}</div>`:''}
+      <div style="font-family:'Prompt',sans-serif;font-size:.95rem;font-weight:700;color:var(--navy);">${m?m.title:'การประชุม'}</div>
+    </div>
+  </div>`;
+
+  if(!rows.length){
+    html += `<div class="card" style="text-align:center;padding:32px;color:var(--gray-400);">ยังไม่มีการตอบรับสำหรับการประชุมนี้</div>`;
+    area.innerHTML = html;
+    return;
+  }
+
+  html += `<div style="font-size:.8rem;color:var(--gray-400);margin-bottom:10px;">${rows.length} หน่วยงาน &nbsp;|&nbsp; ${rows.reduce((s,r)=>s+(r.attendees?r.attendees.length:0),0)} คน</div>`;
+  html += `<div style="overflow-x:auto;"><table class="resp-table">
+    <thead><tr>
+      <th style="width:36px;"></th>
+      <th>หน่วยงาน</th>
+      <th>กระทรวง</th>
+      <th>ผู้กรอก / ตำแหน่ง</th>
+      <th>โทร</th>
+      <th>เวลาตอบรับ</th>
+    </tr></thead><tbody>`;
+
+  rows.forEach((r,i)=>{
+    const attCount = r.attendees ? r.attendees.length : 0;
+    const tsDisplay = formatTimestamp(r.timestamp);
+    html += `<tr class="resp-row" onclick="toggleAttendees(${i})" style="cursor:pointer;">
+      <td style="text-align:center;color:var(--navy-light);font-size:.85rem;">
+        ${attCount>0?`<span id="resp-icon-${i}">➕</span>`:''}
+      </td>
+      <td><b>${r.agency_name||'-'}</b>${r.agency_division?`<br><span style="font-size:.75rem;color:var(--gray-400);">${r.agency_division}</span>`:''}</td>
+      <td style="font-size:.82rem;">${r.agency_ministry||'-'}</td>
+      <td style="font-size:.82rem;">${r.agency_responder||'-'}${r.agency_responder_pos?`<br><span style="color:var(--gray-400);">${r.agency_responder_pos}</span>`:''}</td>
+      <td style="font-size:.82rem;">${r.agency_phone||'-'}</td>
+      <td style="font-size:.78rem;white-space:nowrap;">${tsDisplay}</td>
+    </tr>`;
+    if(attCount>0){
+      html += `<tr id="resp-att-${i}" style="display:none;background:var(--gray-50);">
+        <td></td>
+        <td colspan="5" style="padding:8px 12px;">
+          <table style="width:100%;font-size:.8rem;border-collapse:collapse;">
+            <thead><tr style="color:var(--gray-400);">
+              <th style="text-align:left;padding:3px 8px;font-weight:600;">ชื่อ-นามสกุล</th>
+              <th style="text-align:left;padding:3px 8px;font-weight:600;">ตำแหน่ง</th>
+              <th style="text-align:left;padding:3px 8px;font-weight:600;">โทร</th>
+            </tr></thead><tbody>
+            ${r.attendees.map(a=>`<tr>
+              <td style="padding:3px 8px;">${a.name||'-'}</td>
+              <td style="padding:3px 8px;color:var(--gray-400);">${a.pos||'-'}</td>
+              <td style="padding:3px 8px;color:var(--gray-400);">${a.phone||'-'}</td>
+            </tr>`).join('')}
+            </tbody>
+          </table>
+        </td>
+      </tr>`;
+    }
+  });
+
+  html += `</tbody></table></div>`;
+  area.innerHTML = html;
+}
+
+function toggleAttendees(i){
+  const row = document.getElementById(`resp-att-${i}`);
+  const icon = document.getElementById(`resp-icon-${i}`);
+  if(!row) return;
+  const isHidden = row.style.display === 'none';
+  row.style.display = isHidden ? 'table-row' : 'none';
+  if(icon) icon.textContent = isHidden ? '➖' : '➕';
+}
+
+function formatTimestamp(ts){
+  if(!ts) return '-';
+  try{
+    const s = String(ts);
+    // Apps Script เก็บ timestamp เป็น string เช่น "27/05/2025, 17:42:00" หรือ ISO
+    const d = new Date(s.includes('/') ? s.replace(/(\d+)\/(\d+)\/(\d+)/,'$2/$1/$3') : s);
+    if(isNaN(d)) return s.substring(0,16);
+    const MONTHS=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()+543} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} น.`;
+  }catch(e){ return String(ts).substring(0,16); }
 }
 
 // ══════════════════════════════════════════
