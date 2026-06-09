@@ -837,9 +837,9 @@ function closeModal(){ document.getElementById('editModal').classList.remove('sh
 // ══════════════════════════════════════════
 function jsonpFetch(action, id, cb){
   const cb_name = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-  window[cb_name] = function(data){ delete window[cb_name]; script.remove(); cb(data); };
   const script = document.createElement('script');
-  script.onerror = function(){ delete window[cb_name]; script.remove(); cb(null); };
+  window[cb_name] = function(data){ delete window[cb_name]; if(script.parentNode) script.remove(); cb(data); };
+  script.onerror = function(){ delete window[cb_name]; if(script.parentNode) script.remove(); cb(null); };
   script.src = APPS_URL + '?action=' + action + (id?'&id='+encodeURIComponent(id):'') + '&callback=' + cb_name + '&t=' + Date.now();
   document.head.appendChild(script);
 }
@@ -1021,12 +1021,25 @@ function toggleAttendees(i){
 function formatTimestamp(ts){
   if(!ts) return '-';
   try{
-    const s = String(ts);
-    // Apps Script เก็บ timestamp เป็น string เช่น "27/05/2025, 17:42:00" หรือ ISO
-    const d = new Date(s.includes('/') ? s.replace(/(\d+)\/(\d+)\/(\d+)/,'$2/$1/$3') : s);
-    if(isNaN(d)) return s.substring(0,16);
     const MONTHS=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-    return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()+543} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} น.`;
+    const s = String(ts);
+    // ISO format: "2569-06-10T17:00:00.000Z" — ดึง regex โดยตรง ไม่ผ่าน new Date()
+    const isoT = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if(isoT){
+      let y=parseInt(isoT[1]), mo=parseInt(isoT[2])-1, d=parseInt(isoT[3]);
+      let h=parseInt(isoT[4]), mi=parseInt(isoT[5]);
+      // UTC+7
+      h += 7; if(h >= 24){ h -= 24; d++; const dim=[31,28+(y%4===0?1:0),31,30,31,30,31,31,30,31,30,31]; if(d>dim[mo]){d=1;mo++;if(mo>11){mo=0;y++;}} }
+      const buddhistY = y < 2500 ? y + 543 : y;
+      return `${d} ${MONTHS[mo]} ${buddhistY} ${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')} น.`;
+    }
+    // format "27/05/2569, 17:42:00" จาก Apps Script Logger
+    const slash = s.match(/(\d{1,2})\/(\d{2})\/(\d{4}),?\s*(\d{2}):(\d{2})/);
+    if(slash){
+      const buddhistY = parseInt(slash[3]) < 2500 ? parseInt(slash[3])+543 : parseInt(slash[3]);
+      return `${parseInt(slash[1])} ${MONTHS[parseInt(slash[2])-1]} ${buddhistY} ${slash[4]}:${slash[5]} น.`;
+    }
+    return s.substring(0,16);
   }catch(e){ return String(ts).substring(0,16); }
 }
 

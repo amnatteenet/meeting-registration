@@ -484,12 +484,29 @@ async function loadMeeting(id) {
 
 function formatThaiDate(d){
   if(!d) return '-';
-  const iso = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const MONTHS=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+    'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const s = String(d);
+  // ISO with time: "2569-06-10T17:00:00.000Z" — ดึง regex ไม่ผ่าน new Date()
+  const isoT = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2})/);
+  if(isoT){
+    let y=parseInt(isoT[1]), mo=parseInt(isoT[2])-1, day=parseInt(isoT[3]);
+    const h=parseInt(isoT[4]);
+    // UTC+7: hour >= 17 UTC = เที่ยงคืนหรือหลังในไทย → วันถัดไป
+    if(h >= 17){
+      day++;
+      const dim=[31,(y%4===0?29:28),31,30,31,30,31,31,30,31,30,31];
+      if(day > dim[mo]){ day=1; mo++; if(mo>11){ mo=0; y++; } }
+    }
+    const buddhistY = y < 2500 ? y + 543 : y;
+    return day+' '+MONTHS[mo]+' '+buddhistY;
+  }
+  // ISO date only: "2569-06-10"
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if(iso){
-    const MONTHS=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
-      'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-    const y=parseInt(iso[1]); const mon=parseInt(iso[2])-1; const day=parseInt(iso[3]);
-    return day+' '+MONTHS[mon]+' '+(y>2400?y:y+543);
+    const y=parseInt(iso[1]), mo=parseInt(iso[2])-1, day=parseInt(iso[3]);
+    const buddhistY = y < 2500 ? y + 543 : y;
+    return day+' '+MONTHS[mo]+' '+buddhistY;
   }
   return d;
 }
