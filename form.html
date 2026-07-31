@@ -103,6 +103,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--gray-50);min-height:100vh
 .field{margin-bottom:14px;}
 .field label{display:block;font-size:.82rem;font-weight:600;color:var(--gray-600);margin-bottom:6px;}
 .req{color:var(--red);margin-left:2px;}
+.opt{color:var(--gray-400);font-weight:400;font-size:.72rem;margin-left:5px;}
 .field input,.field select{width:100%;padding:11px 13px;border:1.5px solid var(--gray-200);
   border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:.93rem;
   color:var(--navy);background:var(--white);transition:border-color .2s,box-shadow .2s;outline:none;}
@@ -287,23 +288,23 @@ body{font-family:'Sarabun',sans-serif;background:var(--gray-50);min-height:100vh
         <input type="text" id="agencyName" placeholder="เช่น กรมพัฒนาธุรกิจการค้า">
       </div>
       <div class="field">
-        <label>สังกัด / กระทรวง<span class="req">*</span></label>
+        <label>สังกัด / กระทรวง<span class="opt">(ไม่บังคับ)</span></label>
         <input type="text" id="agencyMinistry" placeholder="เช่น กระทรวงพาณิชย์">
       </div>
       <div class="field">
-        <label>เบอร์โทรติดต่อหน่วยงาน<span class="req">*</span></label>
+        <label>เบอร์โทรติดต่อหน่วยงาน<span class="opt">(ไม่บังคับ)</span></label>
         <input type="tel" id="agencyPhone" placeholder="02-xxx-xxxx" inputmode="tel">
       </div>
       <div class="field">
-        <label>กอง / สำนัก<span class="req">*</span></label>
+        <label>กอง / สำนัก<span class="opt">(ไม่บังคับ)</span></label>
         <input type="text" id="agencyDivision" placeholder="เช่น กองพัฒนาระบบงาน">
       </div>
       <div class="field">
-        <label>ผู้กรอกข้อมูล<span class="req">*</span></label>
+        <label>ผู้กรอกข้อมูล<span class="opt">(ไม่บังคับ)</span></label>
         <input type="text" id="agencyResponder" placeholder="ชื่อ-นามสกุลผู้กรอกข้อมูล">
       </div>
       <div class="field">
-        <label>ตำแหน่ง<span class="req">*</span></label>
+        <label>ตำแหน่ง<span class="opt">(ไม่บังคับ)</span></label>
         <input type="text" id="agencyResponderPos" placeholder="ตำแหน่งของผู้กรอกข้อมูล">
       </div>
       <button class="btn btn-primary" onclick="goPage2()">ถัดไป →</button>
@@ -346,6 +347,10 @@ body{font-family:'Sarabun',sans-serif;background:var(--gray-50);min-height:100vh
           <label>ตำแหน่ง<span class="req">*</span></label>
           <input type="text" id="attPos" placeholder="อธิบดีกรม/ผู้อำนวยการสำนักงาน/เลขาธิการ..." onkeydown="enterAdd(event)">
         </div>
+      </div>
+      <div class="field">
+        <label>กอง / สำนัก<span class="req">*</span></label>
+        <input type="text" id="attDivision" placeholder="เช่น กองพัฒนาระบบงาน / สำนักนโยบายและแผน" onkeydown="enterSave(event)">
       </div>
       <div class="field">
         <label>เบอร์โทรมือถือ หรือ เบอร์สำนักงานพร้อมเบอร์ต่อ<span class="req">*</span></label>
@@ -576,10 +581,10 @@ function goPage1Edit(){ showPage(1); }
 function goPage2() {
   const name=val('agencyName'), min=val('agencyMinistry'), ph=val('agencyPhone');
   const div=val('agencyDivision'), resp=val('agencyResponder'), respPos=val('agencyResponderPos');
-  if(!name||!min||!ph||!div||!resp||!respPos){ toast('⚠️ กรุณากรอกข้อมูลหน่วยงานให้ครบถ้วน'); return; }
+  if(!name){ toast('⚠️ กรุณากรอกชื่อหน่วยงาน / องค์กร'); return; }
   saveAgency(name,min,ph,div,resp,respPos);
   document.getElementById('bannerName').textContent = name;
-  document.getElementById('bannerSub').textContent = min + ' | ☎ ' + ph;
+  document.getElementById('bannerSub').textContent = [min, ph ? ('☎ ' + ph) : ''].filter(Boolean).join(' | ') || '-';
   attendees = []; renderAtts();
   showPage(2);
 }
@@ -590,16 +595,16 @@ let editingIndex = -1; // -1 = กำลังเพิ่มใหม่, >=0 =
 function enterSave(e){ if(e.key==='Enter') saveAtt(); }
 
 function saveAtt(){
-  const name=val('attName'), pos=val('attPos'), ph=val('attPhone');
-  if(!name||!pos||!ph){ toast('⚠️ กรุณากรอกข้อมูลให้ครบถ้วน'); return; }
+  const name=val('attName'), pos=val('attPos'), ph=val('attPhone'), dv=val('attDivision');
+  if(!name||!pos||!ph||!dv){ toast('⚠️ กรุณากรอกข้อมูลให้ครบถ้วน'); return; }
   if(editingIndex >= 0){
-    attendees[editingIndex] = {name,pos,phone:ph};
+    attendees[editingIndex] = {name,pos,phone:ph,division:dv};
     editingIndex = -1;
     resetAttForm();
     renderAtts();
     toast('✅ แก้ไข '+name+' แล้ว');
   } else {
-    attendees.push({name,pos,phone:ph});
+    attendees.push({name,pos,phone:ph,division:dv});
     resetAttForm();
     renderAtts();
     toast('✅ บันทึก '+name+' แล้ว');
@@ -607,9 +612,9 @@ function saveAtt(){
 }
 
 function saveAndAddMore(){
-  const name=val('attName'), pos=val('attPos'), ph=val('attPhone');
-  if(!name||!pos||!ph){ toast('⚠️ กรุณากรอกข้อมูลให้ครบถ้วน'); return; }
-  attendees.push({name,pos,phone:ph});
+  const name=val('attName'), pos=val('attPos'), ph=val('attPhone'), dv=val('attDivision');
+  if(!name||!pos||!ph||!dv){ toast('⚠️ กรุณากรอกข้อมูลให้ครบถ้วน'); return; }
+  attendees.push({name,pos,phone:ph,division:dv});
   resetAttForm();
   renderAtts();
   toast('✅ บันทึก '+name+' แล้ว — กรอกผู้เข้าร่วมท่านต่อไปได้เลย');
@@ -622,6 +627,7 @@ function editAtt(i){
   document.getElementById('attName').value = a.name;
   document.getElementById('attPos').value  = a.pos;
   document.getElementById('attPhone').value = a.phone||'';
+  document.getElementById('attDivision').value = a.division||'';
   document.getElementById('attName').focus();
   toast('✏️ กำลังแก้ไข '+a.name);
 }
@@ -634,7 +640,7 @@ function removeAtt(i){
 }
 
 function resetAttForm(){
-  ['attName','attPos','attPhone'].forEach(id=>document.getElementById(id).value='');
+  ['attName','attPos','attPhone','attDivision'].forEach(id=>document.getElementById(id).value='');
   editingIndex = -1;
 }
 
@@ -647,7 +653,7 @@ function renderAtts(){
     c.innerHTML=`<div class="att-avatar">${a.name.charAt(0)}</div>
       <div class="att-info">
         <div class="att-name">${esc(a.name)}</div>
-        <div class="att-detail">${esc(a.pos)}${a.phone?' · '+esc(a.phone):''}</div>
+        <div class="att-detail">${esc(a.pos)}${a.division?' · '+esc(a.division):''}${a.phone?' · '+esc(a.phone):''}</div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0;">
         <button class="att-edit" onclick="editAtt(${i})" title="แก้ไข">✏️</button>
@@ -662,13 +668,13 @@ function renderAtts(){
 // ── Submit ─────────────────────────────
 async function submitForm(){
   // auto-save ถ้ามีข้อมูลในฟอร์มที่ยังไม่ได้กดบันทึก
-  const pendingName=val('attName'), pendingPos=val('attPos'), pendingPh=val('attPhone');
-  if(pendingName && pendingPos && pendingPh){
+  const pendingName=val('attName'), pendingPos=val('attPos'), pendingPh=val('attPhone'), pendingDv=val('attDivision');
+  if(pendingName && pendingPos && pendingPh && pendingDv){
     if(editingIndex >= 0){
-      attendees[editingIndex] = {name:pendingName, pos:pendingPos, phone:pendingPh};
+      attendees[editingIndex] = {name:pendingName, pos:pendingPos, phone:pendingPh, division:pendingDv};
       editingIndex = -1;
     } else {
-      attendees.push({name:pendingName, pos:pendingPos, phone:pendingPh});
+      attendees.push({name:pendingName, pos:pendingPos, phone:pendingPh, division:pendingDv});
     }
     resetAttForm();
     renderAtts();
