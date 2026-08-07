@@ -991,11 +991,13 @@ function openMeetingResponses(meetingId){
             <thead><tr style="color:var(--gray-400);">
               <th style="text-align:left;padding:3px 8px;font-weight:600;">ชื่อ-นามสกุล</th>
               <th style="text-align:left;padding:3px 8px;font-weight:600;">ตำแหน่ง</th>
+                    <th style="text-align:left;padding:3px 8px;font-weight:600;">กอง / สำนัก</th>
               <th style="text-align:left;padding:3px 8px;font-weight:600;">โทร</th>
             </tr></thead><tbody>
             ${r.attendees.map(a=>`<tr>
               <td style="padding:3px 8px;">${a.name||'-'}</td>
               <td style="padding:3px 8px;color:var(--gray-400);">${a.pos||'-'}</td>
+                    <td style="padding:3px 8px;color:var(--gray-400);">${a.division||'-'}</td>
               <td style="padding:3px 8px;color:var(--gray-400);">${a.phone||''}</td>
             </tr>`).join('')}
             </tbody>
